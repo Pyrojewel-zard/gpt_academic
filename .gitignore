@@ -40,6 +40,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .nox/
+.history/
 .coverage
 .coverage.*
 .cache
@@ -49,6 +50,19 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+# D:\vscode\gpt_academic\THUDM\glm-4-9b-chat\model-00001-of-00010.safetensors-D:\vscode\gpt_academic\THUDM\glm-4-9b-chat\model-00010-of-00010.safetensors需要忽略的文件
+
+THUDM/glm-4-9b-chat/model-00001-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00002-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00003-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00004-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00005-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00006-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00007-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00008-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00009-of-00010.safetensors
+THUDM/glm-4-9b-chat/model-00010-of-00010.safetensors
+THUDM/glm-4-9b-chat/tokenizer.model
 
 # Translations
 *.mo

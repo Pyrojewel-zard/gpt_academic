@@ -18,8 +18,8 @@ def modify_configuration_hot(txt, llm_kwargs, plugin_kwargs, chatbot, history, s
     # ⭐ ⭐ ⭐ 读取可配置项目条目
     names = {}
     from enum import Enum
-    import config
-    for k, v in config.__dict__.items():
+    import config_private
+    for k, v in config_private.__dict__.items():
         if k.startswith('__'): continue
         names.update({k:k})
         # if len(names) > 20: break   # 限制最多前10个配置项，如果太多了会导致gpt无法理解

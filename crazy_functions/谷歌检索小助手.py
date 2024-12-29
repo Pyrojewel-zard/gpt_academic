@@ -162,7 +162,7 @@ def 谷歌检索小助手(txt, llm_kwargs, plugin_kwargs, chatbot, history, syst
     for batch in range(math.ceil(len(meta_paper_info_list)/batchsize)):
         if len(meta_paper_info_list[:batchsize]) > 0:
             i_say = "下面是一些学术文献的数据，提取出以下内容：" + \
-            "1、英文题目；2、中文题目翻译；3、作者；4、arxiv公开（is_paper_in_arxiv）；4、引用数量（cite）；5、中文摘要翻译。" + \
+            "1、英文题目；2、中文题目翻译；3、作者；4、中文摘要翻译。5、引用数量（cite）；6、论文年份" + \
             f"以下是信息源：{str(meta_paper_info_list[:batchsize])}"
 
             inputs_show_user = f"请分析此页面中出现的所有文章：{txt}，这是第{batch+1}批"

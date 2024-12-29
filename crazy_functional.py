@@ -5,6 +5,7 @@ from loguru import logger
 def get_crazy_functions():
     from crazy_functions.读文章写摘要 import 读文章写摘要
     from crazy_functions.生成函数注释 import 批量生成函数注释
+    from crazy_functions.代码重构 import 批量重构代码
     from crazy_functions.SourceCode_Analyse import 解析项目本身
     from crazy_functions.SourceCode_Analyse import 解析一个Python项目
     from crazy_functions.SourceCode_Analyse import 解析一个Matlab项目
@@ -50,6 +51,8 @@ def get_crazy_functions():
     from crazy_functions.SourceCode_Comment import 注释Python项目
     from crazy_functions.SourceCode_Comment_Wrap import SourceCodeComment_Wrap
     from crazy_functions.VideoResource_GPT import 多媒体任务
+    # from crazy_functions.SourceCode_Reconstruct import 重构Python项目
+    # from crazy_functions.SourceCode_Reconstruct_Wrap import SourceCodeReconstruct_Wrap
 
     function_plugins = {
         "多媒体智能体": {
@@ -223,6 +226,13 @@ def get_crazy_functions():
             "AsButton": False,  # 加入下拉菜单中
             "Info": "批量生成函数的注释 | 输入参数为路径",
             "Function": HotReload(批量生成函数注释),
+        },
+        "批量重构代码": {
+            "Group": "编程",
+            "Color": "stop",
+            "AsButton": False,  # 加入下拉菜单中
+            "Info": "批量重构代码 | 输入参数为路径",
+            "Function": HotReload(批量重构代码),
         },
         "保存当前的对话": {
             "Group": "对话",
@@ -434,36 +444,36 @@ def get_crazy_functions():
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
 
-    # try:
-    #     from crazy_functions.联网的ChatGPT import 连接网络回答问题
+    try:
+        from crazy_functions.联网的ChatGPT import 连接网络回答问题
 
-    #     function_plugins.update(
-    #         {
-    #             "连接网络回答问题（输入问题后点击该插件，需要访问谷歌）": {
-    #                 "Group": "对话",
-    #                 "Color": "stop",
-    #                 "AsButton": False,  # 加入下拉菜单中
-    #                 # "Info": "连接网络回答问题（需要访问谷歌）| 输入参数是一个问题",
-    #                 "Function": HotReload(连接网络回答问题),
-    #             }
-    #         }
-    #     )
-    #     from crazy_functions.联网的ChatGPT_bing版 import 连接bing搜索回答问题
+        function_plugins.update(
+            {
+                "连接网络回答问题（输入问题后点击该插件，需要访问谷歌）": {
+                    "Group": "对话",
+                    "Color": "stop",
+                    "AsButton": False,  # 加入下拉菜单中
+                    # "Info": "连接网络回答问题（需要访问谷歌）| 输入参数是一个问题",
+                    "Function": HotReload(连接网络回答问题),
+                }
+            }
+        )
+        from crazy_functions.联网的ChatGPT_bing版 import 连接bing搜索回答问题
 
-    #     function_plugins.update(
-    #         {
-    #             "连接网络回答问题（中文Bing版，输入问题后点击该插件）": {
-    #                 "Group": "对话",
-    #                 "Color": "stop",
-    #                 "AsButton": False,  # 加入下拉菜单中
-    #                 "Info": "连接网络回答问题（需要访问中文Bing）| 输入参数是一个问题",
-    #                 "Function": HotReload(连接bing搜索回答问题),
-    #             }
-    #         }
-    #     )
-    # except:
-    #     logger.error(trimmed_format_exc())
-    #     logger.error("Load function plugin failed")
+        function_plugins.update(
+            {
+                "连接网络回答问题（中文Bing版，输入问题后点击该插件）": {
+                    "Group": "对话",
+                    "Color": "stop",
+                    "AsButton": False,  # 加入下拉菜单中
+                    "Info": "连接网络回答问题（需要访问中文Bing）| 输入参数是一个问题",
+                    "Function": HotReload(连接bing搜索回答问题),
+                }
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
 
     try:
         from crazy_functions.SourceCode_Analyse import 解析任意code项目
@@ -725,7 +735,6 @@ def get_crazy_functions():
     except:
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
-
 
     # try:
     #     from crazy_functions.高级功能函数模板 import 测试图表渲染
