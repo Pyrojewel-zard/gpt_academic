@@ -155,7 +155,9 @@ def 解析一个Matlab项目(txt, llm_kwargs, plugin_kwargs, chatbot, history, s
         return
     file_manifest = [f for f in glob.glob(f'{project_folder}/**/*.m', recursive=True)]
     if len(file_manifest) == 0:
-        report_exception(chatbot, history, a = f"解析Matlab项目: {txt}", b = f"找不到任何`.m`源文件: {txt}")
+        # print压缩包里的文件
+        file_manifest = [f for f in glob.glob(f'{project_folder}/**/*', recursive=True)]
+        report_exception(chatbot, history, a = f"解析Matlab项目: {txt}", b = f"找不到任何`.m`源文件: {txt}，但是找到了以下文件：{file_manifest}")
         yield from update_ui(chatbot=chatbot, history=history) # 刷新界面
         return
     yield from 解析源代码新(file_manifest, project_folder, llm_kwargs, plugin_kwargs, chatbot, history, system_prompt)
