@@ -42,7 +42,7 @@ def parse_pdf(pdf_path, grobid_url):
 
 def produce_report_markdown(gpt_response_collection, meta, paper_meta_info, chatbot, fp, generated_conclusion_files):
     # -=-=-=-=-=-=-=-= 写出第1个文件：翻译前后混合 -=-=-=-=-=-=-=-=
-    res_path = write_history_to_file(meta +  ["# Meta Translation" , paper_meta_info] + gpt_response_collection, file_basename=f"{gen_time_str()}translated_and_original.md", file_fullname=None)
+    res_path = write_history_to_file(meta +  ["# Meta Translation" , paper_meta_info] + gpt_response_collection, file_basename=f"{os.path.splitext(os.path.basename(fp))[0]}_translated_and_original.md", file_fullname=None)
     promote_file_to_downloadzone(res_path, rename_file=os.path.basename(res_path)+'.md', chatbot=chatbot)
     generated_conclusion_files.append(res_path)
 
@@ -64,8 +64,9 @@ def produce_report_markdown(gpt_response_collection, meta, paper_meta_info, chat
             # 再做一个小修改：重新修改当前part的标题，默认用英文的
             cur_value += value
             translated_res_array.append(cur_value)
+            # mark文档修改名称的地方在这里
     res_path = write_history_to_file(meta +  ["# Meta Translation" , paper_meta_info] + translated_res_array,
-                                     file_basename = f"{gen_time_str()}-translated_only.md",
+                                     file_basename = f"{os.path.splitext(os.path.basename(fp))[0]}_translated_only.md",
                                      file_fullname = None,
                                      auto_caption = False)
     promote_file_to_downloadzone(res_path, rename_file=os.path.basename(res_path)+'.md', chatbot=chatbot)
@@ -165,7 +166,7 @@ def translate_pdf(article_dict, llm_kwargs, chatbot, fp, generated_conclusion_fi
         if i%2==1:
             trans = k
             ch.add_row(a=orig, b=trans)
-    create_report_file_name = f"{os.path.basename(fp)}.trans.html"
+    create_report_file_name = f"{os.path.splitext(os.path.basename(fp))[0]}.trans.html"
     html_file = ch.save_file(create_report_file_name)
     generated_conclusion_files.append(html_file)
     promote_file_to_downloadzone(html_file, rename_file=os.path.basename(html_file), chatbot=chatbot)
