@@ -1199,18 +1199,14 @@ if "deepseekcoder" in AVAIL_LLM_MODELS:   # deepseekcoder
         logger.error(trimmed_format_exc())
 
 # -=-=-=-=-=-=- 幻方-深度求索大模型在线API -=-=-=-=-=-=-
-claude_models = [
-    "deepseek-chat", "deepseek-coder", "deepseek-reasoner",
-    "deepseek-r1-671b-64k-thinking", "deepseek-v3-671b-64k",
-    "qwen2-5-32b-128k", "qwen3-32b-128k-thinking"
-]
+claude_models = ["deepseek-chat", "deepseek-coder", "deepseek-reasoner"]
 if any(item in claude_models for item in AVAIL_LLM_MODELS):
     try:
         deepseekapi_noui, deepseekapi_ui = get_predict_function(
             api_key_conf_name="DEEPSEEK_API_KEY", max_output_token=4096, disable_proxy=False
         )
         model_info.update({
-            "deepseek-chat": {
+            "deepseek-chat":{
                 "fn_with_ui": deepseekapi_ui,
                 "fn_without_ui": deepseekapi_noui,
                 "endpoint": deepseekapi_endpoint,
@@ -1219,7 +1215,7 @@ if any(item in claude_models for item in AVAIL_LLM_MODELS):
                 "tokenizer": tokenizer_gpt35,
                 "token_cnt": get_token_num_gpt35,
             },
-            "deepseek-coder": {
+            "deepseek-coder":{
                 "fn_with_ui": deepseekapi_ui,
                 "fn_without_ui": deepseekapi_noui,
                 "endpoint": deepseekapi_endpoint,
@@ -1228,50 +1224,12 @@ if any(item in claude_models for item in AVAIL_LLM_MODELS):
                 "tokenizer": tokenizer_gpt35,
                 "token_cnt": get_token_num_gpt35,
             },
-            "deepseek-reasoner": {
+            "deepseek-reasoner":{
                 "fn_with_ui": deepseekapi_ui,
                 "fn_without_ui": deepseekapi_noui,
                 "endpoint": deepseekapi_endpoint,
                 "can_multi_thread": True,
                 "max_token": 64000,
-                "tokenizer": tokenizer_gpt35,
-                "token_cnt": get_token_num_gpt35,
-                "enable_reasoning": True
-            },
-            "deepseek-r1-671b-64k-thinking": {
-                "fn_with_ui": deepseekapi_ui,
-                "fn_without_ui": deepseekapi_noui,
-                "endpoint": deepseekapi_endpoint,
-                "can_multi_thread": True,
-                "max_token": 64000,
-                "tokenizer": tokenizer_gpt35,
-                "token_cnt": get_token_num_gpt35,
-                "enable_reasoning": True
-            },
-            "deepseek-v3-671b-64k": {
-                "fn_with_ui": deepseekapi_ui,
-                "fn_without_ui": deepseekapi_noui,
-                "endpoint": deepseekapi_endpoint,
-                "can_multi_thread": True,
-                "max_token": 64000,
-                "tokenizer": tokenizer_gpt35,
-                "token_cnt": get_token_num_gpt35,
-            },
-            "qwen2-5-32b-128k": {
-                "fn_with_ui": deepseekapi_ui,
-                "fn_without_ui": deepseekapi_noui,
-                "endpoint": deepseekapi_endpoint,
-                "can_multi_thread": True,
-                "max_token": 128000,
-                "tokenizer": tokenizer_gpt35,
-                "token_cnt": get_token_num_gpt35,
-            },
-            "qwen3-32b-128k-thinking": {
-                "fn_with_ui": deepseekapi_ui,
-                "fn_without_ui": deepseekapi_noui,
-                "endpoint": deepseekapi_endpoint,
-                "can_multi_thread": True,
-                "max_token": 128000,
                 "tokenizer": tokenizer_gpt35,
                 "token_cnt": get_token_num_gpt35,
                 "enable_reasoning": True
@@ -1287,61 +1245,19 @@ for model in [m for m in AVAIL_LLM_MODELS if m.startswith("volcengine-")]:
     #   "volcengine-"          是前缀（必要）
     #   "deepseek-r1-250120"   是模型名（必要）
     #   "(max_token=6666)"     是配置（非必要）
-    # 补全volcengine的模型们
     model_info_extend = model_info
     model_info_extend.update({
-        "deepseek-r1-250528": {
-            "max_token": 64000,
+        "deepseek-r1-250120": {
+            "max_token": 16384,
             "enable_reasoning": True,
             "can_multi_thread": True,
             "endpoint": volcengine_endpoint,
             "tokenizer": tokenizer_gpt35,
             "token_cnt": get_token_num_gpt35,
         },
-        "deepseek-v3-250324": {
-            "max_token": 64000,
+        "deepseek-v3-241226": {
+            "max_token": 16384,
             "enable_reasoning": False,
-            "can_multi_thread": True,
-            "endpoint": volcengine_endpoint,
-            "tokenizer": tokenizer_gpt35,
-            "token_cnt": get_token_num_gpt35,
-        },
-        "kimi-k2-250711": {
-            "max_token": 64000,
-            "enable_reasoning": False,
-            "can_multi_thread": True,
-            "endpoint": volcengine_endpoint,
-            "tokenizer": tokenizer_gpt35,
-            "token_cnt": get_token_num_gpt35,
-        },
-        "deepseek-v3-1-250821": {
-            "max_token": 64000,
-            "enable_reasoning": False,
-            "can_multi_thread": True,
-            "endpoint": volcengine_endpoint,
-            "tokenizer": tokenizer_gpt35,
-            "token_cnt": get_token_num_gpt35,
-        },
-        "doubao-seed-1-6-vision-250815": {
-            "max_token": 64000,
-            "has_multimodal_capacity": True,
-            "enable_reasoning": False,
-            "can_multi_thread": True,
-            "endpoint": volcengine_endpoint,
-            "tokenizer": tokenizer_gpt35,
-            "token_cnt": get_token_num_gpt35,
-        },
-        "doubao-seed-1-6-flash-250715": {
-            "max_token": 64000,
-            "enable_reasoning": False,
-            "can_multi_thread": True,
-            "endpoint": volcengine_endpoint,
-            "tokenizer": tokenizer_gpt35,
-            "token_cnt": get_token_num_gpt35,
-        },
-        "doubao-seed-1-6-thinking-250715": {
-            "max_token": 64000,
-            "enable_reasoning": True,
             "can_multi_thread": True,
             "endpoint": volcengine_endpoint,
             "tokenizer": tokenizer_gpt35,

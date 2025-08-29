@@ -1,0 +1,71 @@
+---
+alwaysApply: false
+description: Git 命令速查（fork 同步、rebase、PR）
+---
+
+## 远端与初始化
+```bash
+git clone https://github.com/<your-username>/gpt_academic.git
+cd gpt_academic
+git remote add upstream https://github.com/binary-husky/gpt_academic.git
+git remote -v
+```
+
+## 同步官方到本地 main（推荐 rebase）
+```bash
+git checkout main
+git fetch upstream
+git rebase upstream/main
+git push origin main --force-with-lease
+```
+
+## 基于 main 开发特性分支
+```bash
+git switch -c feature/<name>
+git add -A
+git commit -m "feat: <message>"
+```
+
+## 在特性分支上保持最新
+```bash
+git fetch upstream
+git rebase upstream/main
+# 解决冲突 -> git add <file> -> git rebase --continue
+```
+
+## 推送与创建 PR
+```bash
+git push -u origin feature/<name>
+# 在 GitHub 上选择：
+#   origin feature/<name> -> origin main（自管合并）
+#   origin feature/<name> -> upstream main（提到官方）
+```
+
+## 合并后更新本地 main
+```bash
+git checkout main
+git fetch upstream
+git rebase upstream/main
+git push origin main --force-with-lease
+```
+
+## 冲突处理
+```bash
+git status
+git add <file>
+git rebase --continue    # 或在 merge 流程中 git commit
+git rebase --abort       # 放弃本次 rebase
+```
+
+## 其他常用
+```bash
+git log --oneline --graph --decorate --all
+git diff
+git restore --staged <file>
+git restore <file>
+git checkout upstream/main -- <path>   # 用官方版本覆盖某文件
+
+# 发布标签
+git tag -a vX.Y.Z -m "release: vX.Y.Z"
+git push origin vX.Y.Z
+```

@@ -66,9 +66,7 @@ class LlamaIndexRagWorker(SaveLoad):
     def __init__(self, user_name, llm_kwargs, auto_load_checkpoint=True, checkpoint_dir=None) -> None:
         self.debug_mode = True
         # Build embedding model via registry so local-http-embed works
-        embed_model_name = llm_kwargs.get("embed_model") or "local-http-embed"
-        if embed_model_name not in embed_model_info:
-            embed_model_name = "local-http-embed"
+        embed_model_name = llm_kwargs.get("embed_model")
         embed_info = embed_model_info[embed_model_name]
         embed_cls = embed_info["embed_class"]
         # Pass endpoint into kwargs for local clients

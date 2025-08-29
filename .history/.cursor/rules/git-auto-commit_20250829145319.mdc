@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+### Git Auto-Commit Guidance (single-dev, commit to main)
+
+When a feature/fix is completed and tests/build pass, commit directly to `main` using Conventional Commits style messages.
+
+- Recommended flow (Windows PowerShell):
+  - Stage all: `git add -A`
+  - Commit: `git commit -m "feat: <short summary>"`
+  - Push: `git push origin main`
+
+- Conventional Commits prefixes:
+  - `feat:` new feature
+  - `fix:` bug fix
+  - `docs:` docs only changes
+  - `refactor:` code change that neither fixes a bug nor adds a feature
+  - `perf:` performance improvement
+  - `test:` add or adjust tests
+  - `chore:` tooling/build/config changes
+
+- Examples:
+  - `feat: add local-http-embed client and config wiring`
+  - `fix: handle empty embedding dimension for local endpoint`
+
+- Suggested cadence:
+  - Commit after each coherent unit of work (feature slice) is done and lints/tests pass.
+  - If a task spans many edits, create smaller commits per subtask with clear messages.
+
+- Optional tag for breaking changes:
+  - `feat!: change embedding API contract`
+
+Note: Since this repo is single-developer, committing to `main` directly is acceptable. If collaboration starts, switch to feature branches and PR reviews.
+

@@ -1,0 +1,160 @@
+---
+alwaysApply: false
+description: 完整 Git 工作流（fork 同步 + 自定义功能开发）
+---
+
+## 适用场景
+- 你在 GitHub 上 fork 了官方仓库，并在自己的 fork 中自由开发功能。
+- 同时希望长期与官方仓库保持同步，减少冲突，保持清晰线性历史。
+
+## 一次性初始化（首次克隆与关联 upstream）
+```bash
+# 1) 从你自己的 fork 克隆
+git clone https://github.com/<your-username>/gpt_academic.git
+cd gpt_academic
+
+# 2) 关联官方仓库为 upstream（只需一次）
+git remote add upstream https://github.com/binary-husky/gpt_academic.git
+
+# 3) 验证远端
+git remote -v
+```
+
+## 日常流程概览
+1) 同步官方更新到你本地 `main`
+2) 基于最新 `main` 创建特性分支开发
+3) 开发中随时与官方同步并 `rebase`，保持分支干净
+4) 推送到自己的 fork 并创建 PR（到自己 `main` 或官方仓库）
+5) 合并后更新你自己的 `main`，再推送到 fork
+
+---
+
+## 1) 同步官方更新到本地 main
+- 推荐使用 rebase 维持线性历史（更干净）。
+```bash
+# 切到本地 main
+git checkout main
+
+# 拉取官方更新
+git fetch upstream
+
+# 方式A：rebase（推荐，线性历史）
+git rebase upstream/main
+
+# 推送到你的 fork；rebase 可能需强推
+git push origin main --force-with-lease
+
+# 方式B：merge（不改写历史，可能出现 merge commits）
+# git merge --ff-only upstream/main || git merge upstream/main
+# git push origin main
+```
+
+提示：如果 rebase 中断，按照冲突解决步骤处理后 `git rebase --continue`。
+
+---
+
+## 2) 基于最新 main 创建特性分支
+```bash
+# 基于 main 创建新分支开发
+git switch -c feature/<简要描述>
+
+# 开发 & 提交
+git add -A
+git commit -m "feat: <你的改动摘要>"
+```
+
+命名建议：`feature/…`、`fix/…`、`chore/…`、`docs/…`。
+
+---
+
+## 3) 开发中保持与官方同步（在特性分支上 rebase）
+```bash
+# 获取官方最新
+git fetch upstream
+
+# 在当前 feature 分支上，把你的提交基于官方 main 之上
+git rebase upstream/main
+
+# 若有冲突：
+# 1) 解决文件冲突
+# 2) git add <冲突文件>
+# 3) git rebase --continue
+# 4) 如需放弃本次 rebase：git rebase --abort
+```
+
+---
+
+## 4) 推送并创建 PR
+```bash
+# 首次推送分支到你的 fork
+git push -u origin feature/<简要描述>
+```
+
+PR 选择：
+- 向自己的 fork 提 PR（`origin feature/* -> origin main`），用于自管合并与发布。
+- 向官方仓库提 PR（`origin feature/* -> upstream main`），用于贡献上游。
+
+PR 前请确保分支已 `rebase upstream/main`，并通过本地测试。
+
+---
+
+## 5) 合并后更新你的 main 并推送
+若 PR 合并到你的 fork 的 `main` 或官方 `upstream/main`：
+```bash
+# 更新本地 main 到最新官方
+git checkout main
+git fetch upstream
+git rebase upstream/main
+git push origin main --force-with-lease
+
+# 如果你选择先在自己仓库合并 feature，再与官方同步：
+# 1) 在 GitHub 上将 PR 合并到 origin/main
+# 2) 本地拉取并同步 upstream
+# 3) 如需保留完全线性历史，可在本地 fast-forward 或 rebase 后 push
+```
+
+---
+
+## 冲突解决速览
+```bash
+# 查看冲突文件
+git status
+
+# 编辑冲突，保留正确内容
+git add <文件>
+
+# 继续进行 rebase 或完成合并
+git rebase --continue   # 正在 rebase 的情况
+# 或
+git commit              # 正在 merge 的情况（若未自动创建提交）
+```
+
+如冲突复杂：
+- 可用图形化工具：`git mergetool`
+- 或分步挑选提交：`git cherry-pick <commit>` 到新分支
+
+---
+
+## 发布版本（可选）
+```bash
+# 打标签
+git tag -a vX.Y.Z -m "release: vX.Y.Z"
+
+# 推送标签到你的 fork（或上游）
+git push origin vX.Y.Z
+```
+
+---
+
+## 常见问题
+- 想丢弃本地改动：`git restore --source=HEAD -- <文件>` 或 `git reset --hard`
+- 想恢复官方版本的某文件：`git checkout upstream/main -- <文件>`
+- rebase 后推送被拒：改用 `git push --force-with-lease`
+- Windows/代理：若网络受限，可在系统或 Git 层配置代理；项目内有 `check_proxy.py` 可用于连通性检查
+
+---
+
+## 最佳实践
+- 经常 `fetch upstream` 并 `rebase`，保持分支短小与线性。
+- 每个功能一个分支，提交信息清晰，便于回溯与评审。
+- 合并前跑测试，避免把冲突和回归带进 `main`。

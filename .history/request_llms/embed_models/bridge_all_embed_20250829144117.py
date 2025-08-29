@@ -40,9 +40,9 @@ embed_model_info = {
     # API_URL_REDIRECT to override the endpoint, or configure via config_private.
     "local-http-embed": {
         "embed_class": LocalHttpEmbeddingModel,
-        # Set to your local embedding service
-        "embed_endpoint": "http://10.112.194.196:8082/embed",
-        # If known, set the exact dimension; otherwise keep None
+        # default example; override via config to your own endpoint
+        "embed_endpoint": "http://127.0.0.1:8082/embed",
+        # If your model has a known fixed dimension, fill it here; otherwise keep None
         "embed_dimension": None,
     },
 }
