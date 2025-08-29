@@ -396,7 +396,44 @@ model_info = {
         "tokenizer": tokenizer_gpt4,
         "token_cnt": get_token_num_gpt4,
     },
-
+# "gpt-5-ca","gpt-5-mini-ca", "gpt-5-nano-ca"
+    "gpt-5-ca": {
+        "fn_with_ui": chatgpt_ui,
+        "fn_without_ui": chatgpt_noui,
+        "has_multimodal_capacity": True,
+        "endpoint": openai_endpoint,
+        "max_token": 128000,
+        "tokenizer": tokenizer_gpt4,
+        "token_cnt": get_token_num_gpt4,
+    },
+    "gpt-5-mini-ca": {
+        "fn_with_ui": chatgpt_ui,
+        "fn_without_ui": chatgpt_noui,
+        "has_multimodal_capacity": True,
+        "endpoint": openai_endpoint,
+        "max_token": 64000,
+        "tokenizer": tokenizer_gpt4,
+        "token_cnt": get_token_num_gpt4,
+    },
+    "gpt-5-nano-ca": {
+        "fn_with_ui": chatgpt_ui,
+        "fn_without_ui": chatgpt_noui,
+        "has_multimodal_capacity": True,
+        "endpoint": openai_endpoint,
+        "max_token": 32000,
+        "tokenizer": tokenizer_gpt4,
+        "token_cnt": get_token_num_gpt4,
+    },
+# gpt-5-mini
+  "gpt-5-mini": {
+        "fn_with_ui": chatgpt_ui,
+        "fn_without_ui": chatgpt_noui,
+        "has_multimodal_capacity": True,
+        "endpoint": openai_endpoint,
+        "max_token": 64000,
+        "tokenizer": tokenizer_gpt4,
+        "token_cnt": get_token_num_gpt4,
+    },
 
     # azure openai
     "azure-gpt-3.5":{
