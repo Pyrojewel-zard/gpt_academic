@@ -33,6 +33,7 @@ class PaperAnalyzer:
         self.system_prompt = system_prompt
         self.paper_content = ""
         self.results = {}
+        self.paper_file_path = None  # 添加论文文件路径属性
 
         # 定义论文分析问题库（已合并为4个核心问题）
         self.questions = [
@@ -69,6 +70,9 @@ class PaperAnalyzer:
         from crazy_functions.doc_fns.text_content_loader import TextContentLoader
         """加载论文内容"""
         yield from update_ui(chatbot=self.chatbot, history=self.history)
+
+        # 保存论文文件路径
+        self.paper_file_path = paper_path
 
         # 使用TextContentLoader读取文件
         loader = TextContentLoader(self.chatbot, self.history)
@@ -142,9 +146,20 @@ class PaperAnalyzer:
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return "报告生成失败: " + str(e)
 
-    def save_report(self, report: str) -> Generator:
+    def save_report(self, report: str, paper_file_path: str = None) -> Generator:
         """保存分析报告"""
         timestamp = time.strftime("%Y%m%d_%H%M%S")
+        
+        # 获取PDF文件名（不含扩展名）
+        pdf_filename = "未知论文"
+        if paper_file_path and os.path.exists(paper_file_path):
+            pdf_filename = os.path.splitext(os.path.basename(paper_file_path))[0]
+            # 清理文件名中的特殊字符，只保留字母、数字、中文和下划线
+            import re
+            pdf_filename = re.sub(r'[^\w\u4e00-\u9fff]', '_', pdf_filename)
+            # 如果文件名过长，截取前50个字符
+            if len(pdf_filename) > 50:
+                pdf_filename = pdf_filename[:50]
 
         # 保存为Markdown文件
         try:
@@ -155,7 +170,7 @@ class PaperAnalyzer:
 
             result_file = write_history_to_file(
                 history=[md_content],
-                file_basename=f"论文解读_{timestamp}.md"
+                file_basename=f"{timestamp}_{pdf_filename}_解读报告.md"
             )
 
             if result_file and os.path.exists(result_file):
@@ -188,7 +203,7 @@ class PaperAnalyzer:
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
         # 保存报告
-        yield from self.save_report(final_report)
+        yield from self.save_report(final_report, self.paper_file_path)
 
 
 def _find_paper_file(path: str) -> str:

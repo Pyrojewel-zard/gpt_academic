@@ -726,6 +726,23 @@ def get_crazy_functions():
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
 
+    try:
+        from crazy_functions.Batch_Paper_Reading import 批量论文速读
+        function_plugins.update(
+            {
+                "批量论文速读": {
+                    "Group": "学术",
+                    "Color": "stop",
+                    "AsButton": False,
+                    "Info": "批量分析多个论文文件，为每篇论文生成独立的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
+                    "Function": HotReload(批量论文速读),
+                },
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
+
 
     # try:
     #     from crazy_functions.高级功能函数模板 import 测试图表渲染

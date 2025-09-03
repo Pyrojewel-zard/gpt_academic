@@ -1,6 +1,44 @@
 ---
-alwaysApply: false
-description: 完整 Git 工作流（fork 同步 + 自定义功能开发）
+alwaysApply: true
+---
+
+
+
+## python执行路径
+conda activate gpt_academic
+先加载环境再执行
+
+## Git Auto-Commit Guidance (single-dev, commit to main)
+
+When a feature/fix is completed and tests/build pass, commit directly to `main` using Conventional Commits style messages.
+
+- Recommended flow (Windows PowerShell):
+  - Stage all: `git add -A`
+  - Commit: `git commit -m "feat: <short summary>"`
+  - Push: `git push origin main`
+
+- Conventional Commits prefixes:
+  - `feat:` new feature
+  - `fix:` bug fix
+  - `docs:` docs only changes
+  - `refactor:` code change that neither fixes a bug nor adds a feature
+  - `perf:` performance improvement
+  - `test:` add or adjust tests
+  - `chore:` tooling/build/config changes
+
+- Examples:
+  - `feat: add local-http-embed client and config wiring`
+  - `fix: handle empty embedding dimension for local endpoint`
+
+- Suggested cadence:
+  - Commit after each coherent unit of work (feature slice) is done and lints/tests pass.
+  - If a task spans many edits, create smaller commits per subtask with clear messages.
+
+- Optional tag for breaking changes:
+  - `feat!: change embedding API contract`
+
+Note: Since this repo is single-developer, committing to `main` directly is acceptable. If collaboration starts, switch to feature branches and PR reviews.
+
 ---
 
 ## 适用场景
@@ -115,6 +153,77 @@ git push origin main --force-with-lease
 
 ---
 
+## Git 命令速查
+
+### 远端与初始化
+```bash
+git clone https://github.com/<your-username>/gpt_academic.git
+cd gpt_academic
+git remote add upstream https://github.com/binary-husky/gpt_academic.git
+git remote -v
+```
+
+### 同步官方到本地 main（推荐 rebase）
+```bash
+git checkout main
+git fetch upstream
+git rebase upstream/main
+git push origin main --force-with-lease
+```
+
+### 基于 main 开发特性分支
+```bash
+git switch -c feature/<name>
+git add -A
+git commit -m "feat: <message>"
+```
+
+### 在特性分支上保持最新
+```bash
+git fetch upstream
+git rebase upstream/main
+# 解决冲突 -> git add <file> -> git rebase --continue
+```
+
+### 推送与创建 PR
+```bash
+git push -u origin feature/<name>
+# 在 GitHub 上选择：
+#   origin feature/<name> -> origin main（自管合并）
+#   origin feature/<name> -> upstream main（提到官方）
+```
+
+### 合并后更新本地 main
+```bash
+git checkout main
+git fetch upstream
+git rebase upstream/main
+git push origin main --force-with-lease
+```
+
+### 冲突处理
+```bash
+git status
+git add <file>
+git rebase --continue    # 或在 merge 流程中 git commit
+git rebase --abort       # 放弃本次 rebase
+```
+
+### 其他常用
+```bash
+git log --oneline --graph --decorate --all
+git diff
+git restore --staged <file>
+git restore <file>
+git checkout upstream/main -- <path>   # 用官方版本覆盖某文件
+
+# 发布标签
+git tag -a vX.Y.Z -m "release: vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+---
+
 ## 冲突解决速览
 ```bash
 # 查看冲突文件
@@ -155,6 +264,11 @@ git push origin vX.Y.Z
 ---
 
 ## 最佳实践
+- 经常 `fetch upstream` 并 `rebase`，保持分支短小与线性。
+- 每个功能一个分支，提交信息清晰，便于回溯与评审。
+- 合并前跑测试，避免把冲突和回归带进 `main`。
+- 使用 Conventional Commits 格式，便于自动化工具处理。
+
 - 经常 `fetch upstream` 并 `rebase`，保持分支短小与线性。
 - 每个功能一个分支，提交信息清晰，便于回溯与评审。
 - 合并前跑测试，避免把冲突和回归带进 `main`。
