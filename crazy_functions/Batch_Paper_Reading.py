@@ -1,3 +1,5 @@
+import json
+import re
 import os
 import time
 import glob
@@ -33,7 +35,15 @@ class BatchPaperAnalyzer:
         self.paper_content = ""
         self.results = {}
         self.paper_file_path = None
+        # ---------- 读取分类树 ----------
+        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
+        with open(json_path, 'r', encoding='utf-8') as f:
+            self.category_tree = json.load(f)          # Dict[str, List[str]]
 
+        # 生成给 LLM 的当前分类清单
+        category_lines = [f"{main} -> {', '.join(subs)}"
+                        for main, subs in self.category_tree.items()]
+        self.category_prompt_str = '\n'.join(category_lines)
         # 定义论文分析问题库（与Paper_Reading保持一致）
         self.questions = [
             PaperQuestion(
@@ -66,10 +76,53 @@ class BatchPaperAnalyzer:
                 importance=5,
                 description="是否值得精读"
             ),
+            PaperQuestion(
+                id="category_assignment",
+                question=(
+                    "请根据论文内容，判断其最准确的二级分类归属。\n\n"
+                    "当前分类树如下（一级 -> 二级）：\n"
+                    f"{self.category_prompt_str}\n\n"
+                    "要求：\n"
+                    "1) 若完全匹配现有二级分类，直接回答：\n"
+                    "   归属：<一级类别> -> <二级子分类>\n"
+                    "2) 若需新建二级分类，回答：\n"
+                    "   新增二级：<一级类别> -> <新子分类名>\n"
+                    "3) 若需新建一级类别，回答：\n"
+                    "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
+                    "4) 用一句话说明判断理由。"
+                ),
+                importance=4,
+                description="论文二级分类归属"
+            ),              
         ]
 
         # 按重要性排序
         self.questions.sort(key=lambda q: q.importance, reverse=True)
+    def _update_category_json(self, llm_answer: str):
+        """
+        解析 LLM 返回的归属/新增指令，并更新 paper.json
+        """
+        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
+
+        # 1) 新增一级
+        m1 = re.search(r'新增一级：(.+?) *-> *\[(.+?)\]', llm_answer)
+        if m1:
+            new_main = m1.group(1).strip()
+            new_subs = [s.strip() for s in m1.group(2).split(',')]
+            self.category_tree[new_main] = new_subs
+        else:
+            # 2) 新增二级
+            m2 = re.search(r'新增二级：(.+?) *-> *(.+)', llm_answer)
+            if m2:
+                main_cat = m2.group(1).strip()
+                new_sub = m2.group(2).strip()
+                if main_cat in self.category_tree and new_sub not in self.category_tree[main_cat]:
+                    self.category_tree[main_cat].append(new_sub)
+
+        # 写回
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(self.category_tree, f, ensure_ascii=False, indent=4)
+
 
     def _load_paper(self, paper_path: str) -> Generator:
         from crazy_functions.doc_fns.text_content_loader import TextContentLoader
@@ -97,21 +150,24 @@ class BatchPaperAnalyzer:
     def _analyze_question(self, question: PaperQuestion) -> Generator:
         """分析单个问题 - 直接显示问题和答案"""
         try:
-            # 创建分析提示
             prompt = f"请基于以下论文内容回答问题：\n\n{self.paper_content}\n\n问题：{question.question}"
 
-            # 使用单线程版本的请求函数
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,
-                inputs_show_user=question.question,  # 显示问题本身
+                inputs_show_user=question.question,
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],  # 空历史，确保每个问题独立分析
+                history=[],
                 sys_prompt="你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
             )
 
             if response:
                 self.results[question.id] = response
+
+                # 如果是分类归属问题，自动更新 paper.json
+                if question.id == "category_assignment":
+                    self._update_category_json(response)
+
                 return True
             return False
 
@@ -119,6 +175,7 @@ class BatchPaperAnalyzer:
             self.chatbot.append(["错误", f"分析问题时出错: {str(e)}"])
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return False
+
 
     def _generate_summary(self) -> Generator:
         """生成最终总结报告"""
