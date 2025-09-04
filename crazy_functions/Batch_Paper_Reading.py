@@ -73,7 +73,7 @@ class BatchPaperAnalyzer:
             PaperQuestion(
                 id="worth_reading_judgment",
                 question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出“强烈推荐”、“推荐”、“一般”或“不推荐”的最终评级，并简要说明理由。",
-                importance=5,
+                importance=2,
                 description="是否值得精读"
             ),
             PaperQuestion(
@@ -91,9 +91,55 @@ class BatchPaperAnalyzer:
                     "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
                     "4) 用一句话说明判断理由。"
                 ),
-                importance=4,
+                importance=1,
                 description="论文二级分类归属"
             ),              
+
+            PaperQuestion(
+                id="core_algorithm_flowcharts",
+                question=(
+                    "请基于论文内容，绘制论文核心算法或核心思路的流程图，若论文包含多个相对独立的模块或阶段，请分别给出多个流程图。\n\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
+                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
+                    "4) 仅聚焦核心逻辑，避免过度细节；\n"
+                    "5) 若只有单一核心流程，仅输出一个流程图；\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
+                    "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
+                    "7) 示例：\n"
+                    "```mermaid\n"
+                    "flowchart LR\n"
+                    "    A[\"输入\"] --> B(\"处理\")\n"
+                    "    B --> C{\"是否满足条件\"}\n"
+                    "    C --> D[\"输出1\"]\n"
+                    "    C --> |\"否\"| E[\"输出2\"]\n"
+                    "```"
+                ),
+                importance=5,
+                description="核心算法/思路流程图（Mermaid）"
+            ),
+            PaperQuestion(
+                id="core_idea_ppt_md",
+                question=(
+                    "请生成一份用于 PPT 的‘论文核心思路与算法’极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括论文做了什么、为何有效。\n\n"
+                    "# 模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按“模块：名称”分组，每组列出 3-5 条‘图解要点’，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支。\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条‘图解要点’。\n\n"
+                    "# 关键算法摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景。\n\n"
+                    "# 应用与效果（≤ 3 条，可省略）\n"
+                    "- 场景/指标/收益。\n\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
+                ),
+                importance=5,
+                description="PPT 用核心思路与算法（Markdown 极简版）"
+            ),
         ]
 
         # 按重要性排序
@@ -196,7 +242,7 @@ class BatchPaperAnalyzer:
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=[],
-                sys_prompt="你是一个科研论文解读专家，请将多个方面的分析整合为一份完整、连贯、有条理的报告。报告应当重点突出，层次分明，并且保持学术性和客观性。"
+                sys_prompt="你是一个科研论文解读专家，请将多个方面的分析整合为一份完整、连贯、有条理的报告。报告应当重点突出，层次分明，并且保持学术性和客观性。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。"
             )
 
             if response:
@@ -225,10 +271,24 @@ class BatchPaperAnalyzer:
 
         # 保存为Markdown文件
         try:
-            md_content = f"# 论文快速解读报告\n\n{report}"
+            md_parts = []
+            # 标题与整体报告
+            md_parts.append(f"论文快速解读报告\n\n{report}")
+
+            # 优先写入：PPT 极简摘要（若有）
+            if "core_idea_ppt_md" in self.results:
+                md_parts.append(f"\n\n## PPT 摘要\n\n{self.results['core_idea_ppt_md']}")
+
+            # 其次写入：核心流程图（Mermaid）（若有，保持代码块原样）
+            if "core_algorithm_flowcharts" in self.results:
+                md_parts.append(f"\n\n## 核心流程图\n\n{self.results['core_algorithm_flowcharts']}")
+
+            # 其余分析项按问题列表顺序写入，但跳过已写入的两个
             for q in self.questions:
-                if q.id in self.results:
-                    md_content += f"\n\n## {q.description}\n\n{self.results[q.id]}"
+                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
+                    md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+
+            md_content = "".join(md_parts)
 
             result_file = write_history_to_file(
                 history=[md_content],
