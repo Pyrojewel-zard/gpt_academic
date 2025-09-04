@@ -72,7 +72,7 @@ def get_crazy_functions():
         "解析整个Python项目": {
             "Group": "编程",
             "Color": "stop",
-            "AsButton": True,
+            "AsButton": False,
             "Info": "解析一个Python项目的所有源文件(.py) | 输入参数为路径",
             "Function": HotReload(解析一个Python项目),
         },
@@ -115,7 +115,7 @@ def get_crazy_functions():
         "Arxiv论文翻译": {
             "Group": "学术",
             "Color": "stop",
-            "AsButton": True,
+            "AsButton": False,
             "Info": "ArXiv论文精细翻译 | 输入参数arxiv论文的ID，比如1812.10695",
             "Function": HotReload(Latex翻译中文并重新编译PDF),  # 当注册Class后，Function旧接口仅会在“虚空终端”中起作用
             "Class": Arxiv_Localize,    # 新一代插件需要注册Class
@@ -269,7 +269,7 @@ def get_crazy_functions():
         "询问多个GPT模型": {
             "Group": "对话",
             "Color": "stop",
-            "AsButton": True,
+            "AsButton": False,
             "Function": HotReload(同时问询),
         },
         "批量总结PDF文档": {
@@ -733,7 +733,7 @@ def get_crazy_functions():
                 "批量论文速读": {
                     "Group": "学术",
                     "Color": "stop",
-                    "AsButton": False,
+                    "AsButton": True,
                     "Info": "批量分析多个论文文件，为每篇论文生成独立的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
                     "Function": HotReload(批量论文速读),
                 },
@@ -750,7 +750,7 @@ def get_crazy_functions():
                 "批量RF IC论文速读": {
                     "Group": "学术",
                     "Color": "stop",
-                    "AsButton": False,
+                    "AsButton": True,
                     "Info": "专门针对射频集成电路领域的批量论文分析工具，为每篇RF IC论文生成专业的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
                     "Function": HotReload(批量射频集成电路论文速读),
                 },

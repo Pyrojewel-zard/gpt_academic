@@ -1325,6 +1325,7 @@ for model in [m for m in AVAIL_LLM_MODELS if m.startswith("volcengine-")]:
     #   "deepseek-r1-250120"   是模型名（必要）
     #   "(max_token=6666)"     是配置（非必要）
     # 补全volcengine的模型们
+    # "volcengine-doubao-seed-1-6-250615","volcengine-doubao-1.5-vision-pro-250328","volcengine-doubao-1.5-vision-lite-250315","volcengine-doubao-1-5-vision-pro-32k-250115","volcengine-doubao-1-5-thinking-vision-pro-250428","volcengine-doubao-1-5-pro-32k-250115","volcengine-doubao-1-5-pro-256k-250115","volcengine-doubao-1-5-lite-32k-250115"
     model_info_extend = model_info
     model_info_extend.update({
         "deepseek-r1-250528": {
@@ -1379,6 +1380,74 @@ for model in [m for m in AVAIL_LLM_MODELS if m.startswith("volcengine-")]:
         "doubao-seed-1-6-thinking-250715": {
             "max_token": 64000,
             "enable_reasoning": True,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-seed-1-6-250615": {
+            "max_token": 64000,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1.5-vision-pro-250328": {
+            "max_token": 64000,
+            "has_multimodal_capacity": True,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1.5-vision-lite-250315": {
+            "max_token": 64000,
+            "has_multimodal_capacity": True,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1-5-vision-pro-32k-250115": {
+            "max_token": 32000,
+            "has_multimodal_capacity": True,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1-5-thinking-vision-pro-250428": {
+            "max_token": 64000,
+            "has_multimodal_capacity": True,
+            "enable_reasoning": True,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1-5-pro-32k-250115": {
+            "max_token": 32000,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1-5-pro-256k-250115": {
+            "max_token": 256000,
+            "enable_reasoning": False,
+            "can_multi_thread": True,
+            "endpoint": volcengine_endpoint,
+            "tokenizer": tokenizer_gpt35,
+            "token_cnt": get_token_num_gpt35,
+        },
+        "doubao-1-5-lite-32k-250115": {
+            "max_token": 32000,
+            "enable_reasoning": False,
             "can_multi_thread": True,
             "endpoint": volcengine_endpoint,
             "tokenizer": tokenizer_gpt35,
