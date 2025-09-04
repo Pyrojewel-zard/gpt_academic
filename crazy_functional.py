@@ -744,6 +744,23 @@ def get_crazy_functions():
         logger.error("Load function plugin failed")
 
     try:
+        from crazy_functions.batch_paper_detail_reading import 批量论文精读
+        function_plugins.update(
+            {
+                "批量论文精读": {
+                    "Group": "学术",
+                    "Color": "stop",
+                    "AsButton": True,
+                    "Info": "批量进行论文精读，输出含方法推导、伪代码、复现清单与流程图的深度技术报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
+                    "Function": HotReload(批量论文精读),
+                },
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
+
+    try:
         from crazy_functions.batch_rf_ic_reading import 批量射频集成电路论文速读
         function_plugins.update(
             {

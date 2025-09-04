@@ -233,13 +233,16 @@ class BatchPaperAnalyzer:
 
             prompt += (
                 "\n严格输出 YAML（不使用代码块围栏），字段如下：\n"
-                "title: 原文标题（尽量英文原题）\n"
+                "title: 原文标题（尽量英文原题,标题需要有引号包裹）\n"
                 "title_zh: 中文标题（若可）\n"
                 "authors: [作者英文名列表]\n"
                 "affiliation_zh: 第一作者单位（中文）\n"
                 "keywords: [英文关键词列表]\n"
                 "urls: [论文链接, Github链接或None]\n"
-                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。"
+                "source_code: [源码链接, None]\n"
+                "read_status: [已阅读, 未阅读]\n"
+                "stars: [⭐⭐⭐⭐⭐, ⭐⭐⭐⭐, ⭐⭐⭐, ⭐⭐, ⭐]\n"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐，read_status为未阅读。"
             )
 
             yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
