@@ -11,6 +11,8 @@ from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
 from crazy_functions.paper_fns.paper_download import extract_paper_id, extract_paper_ids, get_arxiv_paper, format_arxiv_id
+import difflib
+import re
 
 
 @dataclass
@@ -144,6 +146,135 @@ class BatchPaperAnalyzer:
 
         # 按重要性排序
         self.questions.sort(key=lambda q: q.importance, reverse=True)
+
+    # ---------- 关键词库工具 ----------
+    def _get_keywords_db_path(self) -> str:
+        return os.path.join(os.path.dirname(__file__), 'keywords.txt')
+
+    def _load_keywords_db(self) -> List[str]:
+        path = self._get_keywords_db_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return [line.strip() for line in f if line.strip()]
+            except Exception:
+                return []
+        return []
+
+    def _save_keywords_db(self, keywords: List[str]):
+        path = self._get_keywords_db_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                for kw in sorted(set(keywords), key=lambda x: x.lower()):
+                    f.write(kw + '\n')
+        except Exception:
+            pass
+
+    def _normalize_keyword(self, kw: str) -> str:
+        kw = kw.strip()
+        # 英文关键词：统一小写，去除多余空白与尾部标点
+        kw = re.sub(r'[\s\u3000]+', ' ', kw)
+        kw = kw.strip().strip('.,;:')
+        return kw.lower()
+
+    def _find_similar_in_db(self, db: List[str], new_kw: str, threshold: float = 0.88) -> str:
+        if not new_kw:
+            return None
+        candidates = difflib.get_close_matches(new_kw, [self._normalize_keyword(k) for k in db], n=1, cutoff=threshold)
+        if candidates:
+            # 映射回原始大小写形式（优先第一个匹配项）
+            norm = candidates[0]
+            for k in db:
+                if self._normalize_keyword(k) == norm:
+                    return k
+        return None
+
+    def _merge_keywords_with_db(self, extracted_keywords: List[str]) -> Tuple[List[str], List[str]]:
+        """
+        将提取的关键词与关键词库进行合并去重，返回：
+        - canonical_keywords: 替换/合并后的关键词列表（用于写回 YAML）
+        - updated_db: 更新后的关键词库（若有新增）
+        """
+        db = self._load_keywords_db()
+        canonical_list: List[str] = []
+
+        for kw in extracted_keywords:
+            clean = self._normalize_keyword(kw)
+            if not clean:
+                continue
+            similar = self._find_similar_in_db(db, clean)
+            if similar:
+                # 使用库中的标准词形
+                if similar not in canonical_list:
+                    canonical_list.append(similar)
+            else:
+                # 新关键词：加入库与结果
+                db.append(kw)
+                if kw not in canonical_list:
+                    canonical_list.append(kw)
+
+        # 保存更新的关键词库
+        self._save_keywords_db(db)
+        return canonical_list, db
+
+    def _generate_yaml_header(self) -> Generator:
+        """基于论文内容与已得分析，生成 YAML 头部（核心元信息）"""
+        try:
+            prompt = (
+                "请基于以下论文内容与分析要点，提取论文核心元信息并输出 YAML Front Matter：\n\n"
+                f"论文全文内容片段：\n{self.paper_content}\n\n"
+                "若有可用的分析要点：\n"
+            )
+
+            # 将已有结果简要拼接，辅助提取
+            for q in self.questions:
+                if q.id in self.results:
+                    prompt += f"- {q.description}: {self.results[q.id][:400]}\n"
+
+            prompt += (
+                "\n严格输出 YAML（不使用代码块围栏），字段如下：\n"
+                "title: 原文标题（尽量英文原题）\n"
+                "title_zh: 中文标题（若可）\n"
+                "authors: [作者英文名列表]\n"
+                "affiliation_zh: 第一作者单位（中文）\n"
+                "keywords: [英文关键词列表]\n"
+                "urls: [论文链接, Github链接或None]\n"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。"
+            )
+
+            yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
+                inputs=prompt,
+                inputs_show_user="生成论文核心信息 YAML 头",
+                llm_kwargs=self.llm_kwargs,
+                chatbot=self.chatbot,
+                history=[],
+                sys_prompt=(
+                    "你是论文信息抽取助手。请仅输出 YAML Front Matter，"
+                    "键名固定且顺序不限，注意 authors/keywords/urls 应为列表。"
+                )
+            )
+
+            # 简单校验，确保包含 YAML 分隔符
+            if isinstance(yaml_str, str) and yaml_str.strip().startswith("---") and yaml_str.strip().endswith("---"):
+                # 解析并规范化 keywords 列表
+                text = yaml_str.strip()
+                m = re.search(r"^keywords:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
+                if m:
+                    inner = m.group(1).strip()
+                    # 简单解析列表内容，支持带引号或不带引号的英文关键词
+                    # 拆分逗号，同时去掉包裹引号
+                    raw_list = [x.strip().strip('"\'\'') for x in inner.split(',') if x.strip()]
+                    merged, _ = self._merge_keywords_with_db(raw_list)
+                    # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
+                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
+                return text
+            return None
+
+        except Exception as e:
+            self.chatbot.append(["警告", f"生成 YAML 头失败: {str(e)}"])
+            yield from update_ui(chatbot=self.chatbot, history=self.history)
+            return None
     def _update_category_json(self, llm_answer: str):
         """
         解析 LLM 返回的归属/新增指令，并更新 paper.json
@@ -272,7 +403,7 @@ class BatchPaperAnalyzer:
         # 保存为Markdown文件
         try:
             md_parts = []
-            # 标题与整体报告
+            # 标题与整体报告（稍后在前加入 YAML 头）
             md_parts.append(f"论文快速解读报告\n\n{report}")
 
             # 优先写入：PPT 极简摘要（若有）
@@ -289,6 +420,10 @@ class BatchPaperAnalyzer:
                     md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
             md_content = "".join(md_parts)
+
+            # 若已生成 YAML 头，则置于文首
+            if hasattr(self, 'yaml_header') and self.yaml_header:
+                md_content = f"{self.yaml_header}\n\n" + md_content
 
             result_file = write_history_to_file(
                 history=[md_content],
@@ -318,6 +453,9 @@ class BatchPaperAnalyzer:
 
         # 生成总结报告
         final_report = yield from self._generate_summary()
+
+        # 生成 YAML 头
+        self.yaml_header = yield from self._generate_yaml_header()
 
         # 保存报告
         saved_file = self.save_report(final_report, self.paper_file_path)

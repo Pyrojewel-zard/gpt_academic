@@ -327,15 +327,15 @@ def write_history_to_file(
             file_fullname = pj(get_log_folder(), f"GPT-Academic-{gen_time_str()}.md")
     os.makedirs(os.path.dirname(file_fullname), exist_ok=True)
     with open(file_fullname, "w", encoding="utf8") as f:
-        f.write("# GPT-Academic Report\n")
+        # f.write("# GPT-Academic Report\n")
         for i, content in enumerate(history):
             try:
                 if type(content) != str:
                     content = str(content)
             except:
                 continue
-            if i % 2 == 0 and auto_caption:
-                f.write("## ")
+            # if i % 2 == 0 and auto_caption:
+            #     f.write("## ")
             try:
                 f.write(content)
             except:
