@@ -56,16 +56,6 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             DeepReadQuestion(
-                id="algorithm_pseudocode",
-                description="算法伪代码（可实现）",
-                importance=5,
-                question=(
-                    "请给出核心算法的可实现伪代码（类似Python伪代码风格），"
-                    "包括输入、输出、关键超参数、循环/分支结构、重要中间量，"
-                    "并标注每一步的时间/空间复杂度级别。"
-                ),
-            ),
-            DeepReadQuestion(
                 id="assumptions_and_threats",
                 description="关键假设与有效性威胁",
                 importance=4,
@@ -77,20 +67,12 @@ class BatchPaperDetailAnalyzer:
             ),
             DeepReadQuestion(
                 id="experiments_reproduction_plan",
-                description="实验复现实操方案",
+                description="实验设计与可重复性要点（不含代码）",
                 importance=5,
                 question=(
-                    "请输出复现清单：数据集版本/获取方式/许可、预处理流程、核心超参、训练细节（批大小、学习率、调度器、停止准则、随机种子）、"
-                    "评估指标定义与计算、对比方法与消融实验设计、预期资源需求（GPU/CPU/内存/时长）。"
-                ),
-            ),
-            DeepReadQuestion(
-                id="implementation_gotchas",
-                description="实现细节与坑位",
-                importance=4,
-                question=(
-                    "请列出实现中容易忽略但影响结果的细节：数值稳定性（归一化/裁剪/初始化）、精度差异（fp16/bf16）、"
-                    "随机性控制、并行/分布式差异、框架版本兼容性、常见报错与排查要点。"
+                    "请总结实验设计与可重复性关键要点（不涉及任何代码/命令）：数据集版本与获取方式、预处理流程、"
+                    "核心超参数名称（无需给出具体数值）、训练与评测流程概述、对比方法与消融实验设计、"
+                    "资源需求量级（如GPU/CPU/时长）。"
                 ),
             ),
             DeepReadQuestion(
@@ -125,24 +107,157 @@ class BatchPaperDetailAnalyzer:
                 description="核心流程图（Mermaid）",
                 importance=4,
                 question=(
-                    "请给出与实现强相关的流程图（可多个模块），使用```mermaid 代码块，"
-                    "采用 flowchart TD 或 LR，节点名用引号，分支用判定节点，突出输入→处理→输出与关键分支。"
+                    "请给出与实现强相关的流程图（可多个模块）\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
+                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
+                    "4) 仅聚焦核心逻辑，避免过度细节；\n"
+                    "5) 若只有单一核心流程，仅输出一个流程图；\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
+                    "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
+                    "7) 示例：\n"
+                    "```mermaid\n"
+                    "flowchart LR\n"
+                    "    A[\"输入\"] --> B(\"处理\")\n"
+                    "    B --> C{\"是否满足条件\"}\n"
+                    "    C --> D[\"输出1\"]\n"
+                    "    C --> |\"否\"| E[\"输出2\"]\n"
+                    "```"
                 ),
             ),
             DeepReadQuestion(
                 id="exec_summary_md",
-                description="执行级摘要（Markdown）",
+                description="精读要点摘要（Markdown）",
                 importance=5,
                 question=(
-                    "给出用于交付/落地的极简 Markdown 摘要：\n"
+                    "给出极简 Markdown 摘要（不包含任何代码/命令）：\n"
                     "- 一句话总述方法与作用\n"
-                    "- 三到五条实现要点（输入/步骤/输出）\n"
-                    "- 三到五条复现实用要点（数据/超参/资源/时长）"
+                    "- 三到五条方法要点（输入/步骤/输出）\n"
+                    "- 三到五条复现要点（数据/超参名称/资源量级/时长）"
                 ),
             ),
         ]
 
         self.questions.sort(key=lambda q: q.importance, reverse=True)
+
+    # ---------- 关键词库工具（与速读版一致） ----------
+    def _get_keywords_db_path(self) -> str:
+        return os.path.join(os.path.dirname(__file__), 'keywords.txt')
+
+    def _load_keywords_db(self) -> List[str]:
+        path = self._get_keywords_db_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return [line.strip() for line in f if line.strip()]
+            except Exception:
+                return []
+        return []
+
+    def _save_keywords_db(self, keywords: List[str]):
+        path = self._get_keywords_db_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                for kw in sorted(set(keywords), key=lambda x: x.lower()):
+                    f.write(kw + '\n')
+        except Exception:
+            pass
+
+    def _normalize_keyword(self, kw: str) -> str:
+        kw = kw.strip()
+        kw = re.sub(r'[\s\u3000]+', ' ', kw)
+        kw = kw.strip().strip('.,;:')
+        return kw.lower()
+
+    def _find_similar_in_db(self, db: List[str], new_kw: str, threshold: float = 0.88) -> str:
+        import difflib
+        if not new_kw:
+            return None
+        candidates = difflib.get_close_matches(new_kw, [self._normalize_keyword(k) for k in db], n=1, cutoff=threshold)
+        if candidates:
+            norm = candidates[0]
+            for k in db:
+                if self._normalize_keyword(k) == norm:
+                    return k
+        return None
+
+    def _merge_keywords_with_db(self, extracted_keywords: List[str]):
+        db = self._load_keywords_db()
+        canonical_list: List[str] = []
+        for kw in extracted_keywords:
+            clean = self._normalize_keyword(kw)
+            if not clean:
+                continue
+            similar = self._find_similar_in_db(db, clean)
+            if similar:
+                if similar not in canonical_list:
+                    canonical_list.append(similar)
+            else:
+                db.append(kw)
+                if kw not in canonical_list:
+                    canonical_list.append(kw)
+        self._save_keywords_db(db)
+        return canonical_list, db
+
+    def _generate_yaml_header(self) -> Generator:
+        """基于论文内容与已得分析，生成 YAML Front Matter"""
+        try:
+            prompt = (
+                "请基于以下论文内容与分析要点，提取论文核心元信息并输出 YAML Front Matter：\n\n"
+                f"论文全文内容片段：\n{self.paper_content}\n\n"
+                "若有可用的分析要点：\n"
+            )
+            for q in self.questions:
+                if q.id in self.results:
+                    prompt += f"- {q.description}: {self.results[q.id][:400]}\n"
+
+            prompt += (
+                "\n严格输出 YAML（不使用代码块围栏），字段如下：\n"
+                "title: 原文标题（尽量英文原题,标题需要有引号包裹）\n"
+                "title_zh: 中文标题（若可）\n"
+                "authors: [作者英文名列表]\n"
+                "affiliation_zh: 第一作者单位（中文）\n"
+                "keywords: [英文关键词列表]\n"
+                "urls: [论文链接, Github链接或None]\n"
+                "doi: [DOI链接, None]\n"
+                "journal_or_conference: [期刊或会议名称, None]\n"
+                "year: [年份, None]\n"
+                "source_code: [源码链接, None]\n"
+                "read_status: [已阅读, 未阅读]\n"
+                "stars: [⭐⭐⭐⭐⭐, ⭐⭐⭐⭐, ⭐⭐⭐, ⭐⭐, ⭐]\n"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐，read_status为未阅读。"
+            )
+
+            yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
+                inputs=prompt,
+                inputs_show_user="生成论文核心信息 YAML 头",
+                llm_kwargs=self.llm_kwargs,
+                chatbot=self.chatbot,
+                history=[],
+                sys_prompt=(
+                    "你是论文信息抽取助手。请仅输出 YAML Front Matter，"
+                    "键名固定且顺序不限，注意 authors/keywords/urls 应为列表。"
+                )
+            )
+
+            if isinstance(yaml_str, str) and yaml_str.strip().startswith("---") and yaml_str.strip().endswith("---"):
+                text = yaml_str.strip()
+                m = re.search(r"^keywords:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
+                if m:
+                    inner = m.group(1).strip()
+                    raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
+                    merged, _ = self._merge_keywords_with_db(raw_list)
+                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
+                return text
+            return None
+        except Exception as e:
+            self.chatbot.append(["警告", f"生成 YAML 头失败: {str(e)}"])
+            yield from update_ui(chatbot=self.chatbot, history=self.history)
+            return None
 
     def _load_paper(self, paper_path: str) -> Generator:
         from crazy_functions.doc_fns.text_content_loader import TextContentLoader
@@ -161,7 +276,10 @@ class BatchPaperDetailAnalyzer:
     def _ask(self, q: DeepReadQuestion) -> Generator:
         try:
             prompt = (
-                "请基于以下论文内容进行精读分析，并严格围绕问题作答。\n\n"
+                "请基于以下论文内容进行精读分析，并严格围绕问题作答。\n"
+                "注意：请避免提供任何代码、伪代码、命令行或具体实现细节；"
+                "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n\n"
+                
                 f"论文内容：\n{self.paper_content}\n\n"
                 f"问题：{q.question}"
             )
@@ -172,8 +290,8 @@ class BatchPaperDetailAnalyzer:
                 chatbot=self.chatbot,
                 history=[],
                 sys_prompt=(
-                    "你是资深研究员与代码实现者，回答要可操作、可复现、结构清晰。"
-                    "如涉及公式与伪代码，使用清晰可实现的写法；如涉及Mermaid，请用```mermaid 包裹。"
+                    "你是资深研究员，输出以概念与方法论层面为主，不包含任何代码或伪代码。"
+                    "如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。"
                 ),
             )
             if resp:
@@ -190,8 +308,8 @@ class BatchPaperDetailAnalyzer:
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
         prompt = (
-            "请将以下精读分析整理为完整的技术报告，层次清晰、可落地实现。"
-            "若包含```mermaid 代码块，请原样保留。"
+            "请将以下精读分析整理为完整的技术报告，层次清晰，突出核心思想与实验设计要点，"
+            "不包含任何代码/伪代码/命令行。若包含```mermaid 代码块，请原样保留。"
         )
         for q in self.questions:
             if q.id in self.results:
@@ -232,6 +350,8 @@ class BatchPaperDetailAnalyzer:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
         content = "".join(parts)
+        if hasattr(self, 'yaml_header') and self.yaml_header:
+            content = f"{self.yaml_header}\n\n" + content
         result_file = write_history_to_file(
             history=[content],
             file_basename=f"{timestamp}_{pdf_basename}_精读报告.md",
@@ -248,6 +368,8 @@ class BatchPaperDetailAnalyzer:
         for q in self.questions:
             yield from self._ask(q)
         report = yield from self._generate_report()
+        # 生成 YAML 头
+        self.yaml_header = yield from self._generate_yaml_header()
         saved = self.save_report(report)
         return saved
 
