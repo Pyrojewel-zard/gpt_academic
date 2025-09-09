@@ -445,7 +445,8 @@ def 批量论文精读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
         "函数插件功能及使用方式",
         (
             "批量论文精读：对多个论文文件进行深入阅读与技术复盘，输出面向实现与复现的深度报告。\n\n"
-            "使用方式：\n1) 输入包含多个PDF的文件夹路径；\n2) 或输入多个论文ID（DOI或arXiv），用逗号分隔；\n3) 点击开始。"
+            "使用方式：\n1) 输入包含多个PDF的文件夹路径；\n2) 或输入多个论文ID（DOI或arXiv），用逗号分隔；\n3) 点击开始。\n\n"
+            "注意事项：\n- 若需要输出公式，请使用 LaTeX 数学格式：行内公式用 $...$，行间公式用 $$...$$。"
         ),
     ])
     yield from update_ui(chatbot=chatbot, history=history)
