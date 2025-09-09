@@ -41,19 +41,17 @@
         "多模多频集成",
         "毫米波与太赫兹电路"
     ],
-    "7. 机器学习辅助设计 (ML-Aided RF Design)": [
+    "7. 机器学习与EDA (ML & EDA for RF)": [
         "电感/变压器建模与预测",
         "LNA/PA 参数优化",
         "系统级建模与快速综合",
-        "版图自动化与寄生建模"
-    ],
-    "8. 电子设计自动化 (EDA for RF)": [
+        "版图自动化与寄生建模",
         "电磁-电路联合仿真",
         "电路综合与优化算法 (PSO, GA, SA 等)",
         "工艺与版图效应建模",
         "快速仿真与降阶建模"
     ],
-    "9. 模拟集成电路 (Analog ICs)": [
+    "8. 模拟集成电路 (Analog ICs)": [
         "运算放大器与 OTA",
         "数据转换器 (ADCs & DACs)",
         "基准与带隙电路",
@@ -61,34 +59,34 @@
         "比较器与采样保持电路",
         "滤波与开关电容电路"
     ],
-    "10. 频率合成与倍频/分频电路 (Frequency Synthesis & Multipliers/Dividers)": [
+    "9. 频率合成与倍频/分频电路 (Frequency Synthesis & Multipliers/Dividers)": [
         "频率倍频器",
         "频率分频器",
         "注入锁定分频器",
         "分数分频与整数分频"
     ],
-    "11. 开关与衰减器 (Switches & Attenuators)": [
+    "10. 开关与衰减器 (Switches & Attenuators)": [
         "射频开关 (T/R Switch)",
         "可变衰减器",
         "固定衰减器"
     ],
-    "12. 检波与功率控制 (Detection & Power Control)": [
+    "11. 检波与功率控制 (Detection & Power Control)": [
         "功率检波器",
         "自动增益控制 (AGC)",
         "环路功率控制"
     ],
-    "13. 移相器与波束形成 (Phase Shifters & Beamforming)": [
+    "12. 移相器与波束形成 (Phase Shifters & Beamforming)": [
         "移相器",
         "矢量调制器",
         "波束形成网络"
     ],
-    "14. 射频测试与建模 (RF Testing & Modeling)": [
+    "13. 射频测试与建模 (RF Testing & Modeling)": [
         "器件与电路表征 (S 参数、噪声参数、非线性)",
         "大信号建模与功率测量",
         "片上测试与 BIST",
         "射频可靠性与失效分析"
     ],
-    "15. 工艺与封装技术 (Technology & Packaging)": [
+    "14. 工艺与封装技术 (Technology & Packaging)": [
         "CMOS/SiGe/GaAs/GaN 工艺对比",
         "射频 SoC 与 SiP",
         "天线封装与互连 (AiP)",
