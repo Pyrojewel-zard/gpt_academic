@@ -33,6 +33,7 @@ class BatchPaperDetailAnalyzer:
         self.paper_content = ""
         self.results: Dict[str, str] = {}
         self.paper_file_path: str = None
+        self.secondary_category: str = None
 
         # 精读维度（更深入的技术细节、可复现性、理论依据等）
         self.questions: List[DeepReadQuestion] = [
@@ -265,6 +266,14 @@ class BatchPaperDetailAnalyzer:
                         text = text[:-3].rstrip() + "\n" + prompts_block + "---"
                 except Exception:
                     pass
+                # 注入“归属”二级分类到 YAML 头（仅写入分类路径本身，并用引号包裹）
+                try:
+                    if getattr(self, 'secondary_category', None):
+                        escaped = self.secondary_category.replace('"', '\\"')
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
+                except Exception:
+                    pass
                 return text
             return None
         except Exception as e:
@@ -341,6 +350,22 @@ class BatchPaperDetailAnalyzer:
         )
         return resp or "报告生成失败"
 
+    def _extract_secondary_category(self, report: str) -> str:
+        """从报告中提取“归属：”后的二级分类文本，只保留类似
+        “7. 机器学习辅助设计 (ML-Aided RF Design) -> 系统级建模与快速综合”。
+        """
+        try:
+            if not isinstance(report, str):
+                return None
+            m = re.search(r"^归属：\s*([^\r\n]+)", report, flags=re.MULTILINE)
+            if not m:
+                return None
+            category_line = m.group(1).strip()
+            category_line = re.sub(r"[\s\u3000]+$", "", category_line)
+            return category_line if category_line else None
+        except Exception:
+            return None
+
     def save_report(self, report: str) -> str:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         pdf_basename = "未知论文"
@@ -381,6 +406,8 @@ class BatchPaperDetailAnalyzer:
         for q in self.questions:
             yield from self._ask(q)
         report = yield from self._generate_report()
+        # 从报告中提取二级分类归属
+        self.secondary_category = self._extract_secondary_category(report)
         # 生成 YAML 头
         self.yaml_header = yield from self._generate_yaml_header()
         saved = self.save_report(report)
