@@ -121,7 +121,7 @@ class BatchPaperDetailAnalyzer:
                     "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
                     "7) 示例：\n"
                     "```mermaid\n"
-                    "flowchart LR\n"
+                    "flowchart TD\n"
                     "    A[\"输入\"] --> B(\"处理\")\n"
                     "    B --> C{\"是否满足条件\"}\n"
                     "    C --> D[\"输出1\"]\n"
@@ -272,6 +272,31 @@ class BatchPaperDetailAnalyzer:
                         escaped = self.secondary_category.replace('"', '\\"')
                         if text.endswith("---"):
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
+                except Exception:
+                    pass
+                # 基于 stars 推断“论文重要程度”并写入（中文等级，值用引号包裹）
+                try:
+                    m_star = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
+                    level = None
+                    if m_star:
+                        inner = m_star.group(1)
+                        m_seq = re.search(r"(⭐{1,5})", inner)
+                        if m_seq:
+                            count = len(m_seq.group(1))
+                            if count >= 5:
+                                level = "强烈推荐"
+                            elif count == 4:
+                                level = "推荐"
+                            elif count == 3:
+                                level = "一般"
+                            elif count == 2:
+                                level = "谨慎"
+                            elif count == 1:
+                                level = "不推荐"
+                    if not level:
+                        level = "一般"
+                    if text.endswith("---"):
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
                 except Exception:
                     pass
                 return text
