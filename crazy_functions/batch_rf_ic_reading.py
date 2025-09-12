@@ -84,6 +84,170 @@ class BatchRFICAnalyzer:
         # 按重要性排序
         self.questions.sort(key=lambda q: q.importance, reverse=True)
 
+        # ---------- 关键词库工具（与 Batch_Paper_Reading 保持一致） ----------
+    def _get_keywords_db_path(self) -> str:
+        return os.path.join(os.path.dirname(__file__), 'keywords.txt')
+
+    def _load_keywords_db(self) -> List[str]:
+        path = self._get_keywords_db_path()
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return [line.strip() for line in f if line.strip()]
+            except Exception:
+                return []
+        return []
+
+    def _save_keywords_db(self, keywords: List[str]):
+        path = self._get_keywords_db_path()
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                for kw in sorted(set(keywords), key=lambda x: x.lower()):
+                    f.write(kw + '\n')
+        except Exception:
+            pass
+
+    def _normalize_keyword(self, kw: str) -> str:
+        kw = kw.strip()
+        # 英文关键词：统一小写，去除多余空白与尾部标点
+        import re as _re
+        kw = _re.sub(r'[\s\u3000]+', ' ', kw)
+        kw = kw.strip().strip('.,;:')
+        return kw.lower()
+
+    def _find_similar_in_db(self, db: List[str], new_kw: str, threshold: float = 0.88) -> str:
+        import difflib as _difflib
+        if not new_kw:
+            return None
+        candidates = _difflib.get_close_matches(new_kw, [self._normalize_keyword(k) for k in db], n=1, cutoff=threshold)
+        if candidates:
+            # 映射回原始大小写形式（优先第一个匹配项）
+            norm = candidates[0]
+            for k in db:
+                if self._normalize_keyword(k) == norm:
+                    return k
+        return None
+
+    def _merge_keywords_with_db(self, extracted_keywords: List[str]) -> Tuple[List[str], List[str]]:
+        """
+        将提取的关键词与关键词库进行合并去重，返回：
+        - canonical_keywords: 替换/合并后的关键词列表（用于写回 YAML）
+        - updated_db: 更新后的关键词库（若有新增）
+        """
+        db = self._load_keywords_db()
+        canonical_list: List[str] = []
+
+        for kw in extracted_keywords:
+            clean = self._normalize_keyword(kw)
+            if not clean:
+                continue
+            similar = self._find_similar_in_db(db, clean)
+            if similar:
+                # 使用库中的标准词形
+                if similar not in canonical_list:
+                    canonical_list.append(similar)
+            else:
+                # 新关键词：加入库与结果
+                db.append(kw)
+                if kw not in canonical_list:
+                    canonical_list.append(kw)
+
+        # 保存更新的关键词库
+        self._save_keywords_db(db)
+        return canonical_list, db
+
+    def _generate_yaml_header(self) -> Generator:
+        """基于论文内容与已得分析，生成 YAML 头部（核心元信息）——与 Batch_Paper_Reading 保持一致"""
+        try:
+            prompt = (
+                "请基于以下论文内容与分析要点，提取论文核心元信息并输出 YAML Front Matter：\n\n"
+                f"论文全文内容片段：\n{self.paper_content}\n\n"
+                "若有可用的分析要点：\n"
+            )
+
+            # 将已有结果简要拼接，辅助提取
+            for q in self.questions:
+                if q.id in self.results:
+                    prompt += f"- {q.description}: {self.results[q.id][:400]}\n"
+
+            prompt += (
+                "\n严格输出 YAML（不使用代码块围栏），字段如下：\n"
+                "title: 原文标题（尽量英文原题,标题需要有引号包裹）\n"
+                "title_zh: 中文标题（若可）\n"
+                "authors: [作者英文名列表]\n"
+                "affiliation_zh: 第一作者单位（中文）\n"
+                "keywords: [英文关键词列表]\n"
+                "urls: [论文链接, Github链接或None]\n"
+                "doi: [DOI链接, None]\n"
+                "journal_or_conference: [期刊或会议名称, None]\n"
+                "year: [年份, None]\n"
+                "source_code: [源码链接, None]\n"
+                "read_status: [已阅读, 未阅读]\n"
+                "stars: [⭐⭐⭐⭐⭐, ⭐⭐⭐⭐, ⭐⭐⭐, ⭐⭐, ⭐]\n"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐，read_status为未阅读。"
+            )
+
+            yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
+                inputs=prompt,
+                inputs_show_user="生成论文核心信息 YAML 头",
+                llm_kwargs=self.llm_kwargs,
+                chatbot=self.chatbot,
+                history=[],
+                sys_prompt=(
+                    "你是论文信息抽取助手。请仅输出 YAML Front Matter，"
+                    "键名固定且顺序不限，注意 authors/keywords/urls 应为列表。"
+                )
+            )
+
+            # 简单校验，确保包含 YAML 分隔符
+            if isinstance(yaml_str, str) and yaml_str.strip().startswith("---") and yaml_str.strip().endswith("---"):
+                import re as _re2
+                # 解析并规范化 keywords 列表
+                text = yaml_str.strip()
+                m = _re2.search(r"^keywords:\s*\[(.*?)\]\s*$", text, flags=_re2.MULTILINE)
+                if m:
+                    inner = m.group(1).strip()
+                    # 简单解析列表内容，支持带引号或不带引号的英文关键词
+                    # 拆分逗号，同时去掉包裹引号
+                    raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
+                    merged, _ = self._merge_keywords_with_db(raw_list)
+                    # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
+                    rebuilt = ', '.join([f'\"{k}\"' for k in merged])
+                    text = _re2.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=_re2.MULTILINE)
+
+                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失再回退到默认
+                try:
+                    level = None
+                    try:
+                        judge = self.results.get("worth_reading_judgment", "")
+                        if isinstance(judge, str) and judge:
+                            if "强烈推荐" in judge:
+                                level = "强烈推荐"
+                            elif "不推荐" in judge:
+                                level = "不推荐"
+                            elif "谨慎" in judge:
+                                level = "谨慎"
+                            elif "一般" in judge:
+                                level = "一般"
+                            elif "推荐" in judge:
+                                level = "推荐"
+                    except Exception:
+                        pass
+                    if not level:
+                        # 兜底：维持原默认
+                        level = "一般"
+                    if text.endswith("---"):
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
+                except Exception:
+                    pass
+                return text
+            return None
+
+        except Exception as e:
+            self.chatbot.append(["警告", f"生成 YAML 头失败: {str(e)}"])
+            yield from update_ui(chatbot=self.chatbot, history=self.history)
+            return None
+
     def _load_paper(self, paper_path: str) -> Generator:
         from crazy_functions.doc_fns.text_content_loader import TextContentLoader
         """加载论文内容"""
@@ -203,31 +367,6 @@ class BatchRFICAnalyzer:
 
         # 保存为Markdown文件
         try:
-            # 生成简易 YAML 头：仅包含 deep_read_prompts 与 论文重要程度
-            try:
-                prompts_lines = ["---"]
-                # 从 worth_reading_judgment 结果文本直接推断中文等级
-                level = "一般"
-                try:
-                    judge = self.results.get("worth_reading_judgment", "")
-                    if "强烈推荐" in judge:
-                        level = "强烈推荐"
-                    elif "不推荐" in judge:
-                        level = "不推荐"
-                    elif "谨慎" in judge:
-                        level = "谨慎"
-                    elif "推荐" in judge:
-                        level = "推荐"
-                    elif "一般" in judge:
-                        level = "一般"
-                except Exception:
-                    pass
-                prompts_lines.append(f"论文重要程度: \"{level}\"")
-                prompts_lines.append("---")
-                self.yaml_header = "\n".join(prompts_lines)
-            except Exception:
-                self.yaml_header = None
-
             md_content = ""
             if self.yaml_header:
                 md_content += self.yaml_header + "\n\n"
@@ -269,6 +408,9 @@ class BatchRFICAnalyzer:
 
         # 生成总结报告
         final_report = yield from self._generate_summary()
+
+        # 生成 YAML 头，与 Batch_Paper_Reading 一致流程
+        self.yaml_header = yield from self._generate_yaml_header()
 
         # 保存报告
         saved_file = self.save_report(final_report, self.paper_file_path)
