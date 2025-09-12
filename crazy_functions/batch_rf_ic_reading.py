@@ -33,6 +33,7 @@ class BatchRFICAnalyzer:
         self.paper_content = ""
         self.results = {}
         self.paper_file_path = None
+        self.yaml_header = None
 
         # 定义射频集成电路论文分析问题库（专门针对RF IC领域）
         self.questions = [
@@ -202,7 +203,41 @@ class BatchRFICAnalyzer:
 
         # 保存为Markdown文件
         try:
-            md_content = f"# 射频集成电路论文专业解读报告\n\n"
+            # 生成简易 YAML 头：仅包含 deep_read_prompts 与 论文重要程度
+            try:
+                prompts_lines = ["---", "deep_read_prompts:"]
+                for q in self.questions:
+                    desc = q.description.replace('"', '\\"')
+                    prompts_lines.append(f"  - id: {q.id}")
+                    prompts_lines.append(f"    description: \"{desc}\"")
+                    prompts_lines.append(f"    importance: {q.importance}")
+                # 从结果中粗略推断星级（若无，默认⭐⭐⭐）并映射到中文等级
+                stars = "⭐⭐⭐"
+                level = "一般"
+                try:
+                    # 若有 worth_reading_judgment，可在文本中寻找“强烈推荐/推荐/一般/不推荐”
+                    judge = self.results.get("worth_reading_judgment", "")
+                    if "强烈推荐" in judge:
+                        stars = "⭐⭐⭐⭐⭐"; level = "强烈推荐"
+                    elif "推荐" in judge and "强烈" not in judge:
+                        stars = "⭐⭐⭐⭐"; level = "推荐"
+                    elif "谨慎" in judge:
+                        stars = "⭐⭐"; level = "谨慎"
+                    elif "不推荐" in judge:
+                        stars = "⭐"; level = "不推荐"
+                except Exception:
+                    pass
+                prompts_lines.append(f"stars: [\"{stars}\"]")
+                prompts_lines.append(f"论文重要程度: \"{level}\"")
+                prompts_lines.append("---")
+                self.yaml_header = "\n".join(prompts_lines)
+            except Exception:
+                self.yaml_header = None
+
+            md_content = ""
+            if self.yaml_header:
+                md_content += self.yaml_header + "\n\n"
+            md_content += f"# 射频集成电路论文专业解读报告\n\n"
             md_content += f"**分析时间**: {timestamp}\n"
             md_content += f"**论文文件**: {os.path.basename(paper_file_path) if paper_file_path else '未知'}\n\n"
             md_content += f"## 报告摘要\n\n{report}\n\n"
