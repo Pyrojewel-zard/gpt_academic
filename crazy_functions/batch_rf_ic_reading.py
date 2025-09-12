@@ -205,12 +205,7 @@ class BatchRFICAnalyzer:
         try:
             # 生成简易 YAML 头：仅包含 deep_read_prompts 与 论文重要程度
             try:
-                prompts_lines = ["---", "deep_read_prompts:"]
-                for q in self.questions:
-                    desc = q.description.replace('"', '\\"')
-                    prompts_lines.append(f"  - id: {q.id}")
-                    prompts_lines.append(f"    description: \"{desc}\"")
-                    prompts_lines.append(f"    importance: {q.importance}")
+                prompts_lines = ["---"]
                 # 从结果中粗略推断星级（若无，默认⭐⭐⭐）并映射到中文等级
                 stars = "⭐⭐⭐"
                 level = "一般"

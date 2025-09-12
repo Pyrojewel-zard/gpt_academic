@@ -37,6 +37,7 @@ class BatchPaperAnalyzer:
         self.paper_content = ""
         self.results = {}
         self.paper_file_path = None
+        self.secondary_category = None
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -103,17 +104,17 @@ class BatchPaperAnalyzer:
                     "请基于论文内容，绘制论文核心算法或核心思路的流程图，若论文包含多个相对独立的模块或阶段，请分别给出多个流程图。\n\n"
                     "要求：\n"
                     "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
-                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
                     "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
                     "4) 仅聚焦核心逻辑，避免过度细节；\n"
                     "5) 若只有单一核心流程，仅输出一个流程图；\n"
                     "6) 格式约束：\n"
                     "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
                     "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
-                    "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
                     "7) 示例：\n"
                     "```mermaid\n"
-                    "flowchart LR\n"
+                    "flowchart TD\n"
                     "    A[\"输入\"] --> B(\"处理\")\n"
                     "    B --> C{\"是否满足条件\"}\n"
                     "    C --> D[\"输出1\"]\n"
@@ -269,11 +270,44 @@ class BatchPaperAnalyzer:
                     inner = m.group(1).strip()
                     # 简单解析列表内容，支持带引号或不带引号的英文关键词
                     # 拆分逗号，同时去掉包裹引号
-                    raw_list = [x.strip().strip('"\'\'') for x in inner.split(',') if x.strip()]
+                    raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
                     merged, _ = self._merge_keywords_with_db(raw_list)
                     # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
-                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
+                # 注入“归属”二级分类（若可用）
+                try:
+                    if getattr(self, 'secondary_category', None):
+                        escaped = self.secondary_category.replace('\"', '\\\"')
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
+                except Exception:
+                    pass
+                # 基于 stars 推断中文“论文重要程度”
+                try:
+                    m_star = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
+                    level = None
+                    if m_star:
+                        inner = m_star.group(1)
+                        m_seq = re.search(r"(⭐{1,5})", inner)
+                        if m_seq:
+                            count = len(m_seq.group(1))
+                            if count >= 5:
+                                level = "强烈推荐"
+                            elif count == 4:
+                                level = "推荐"
+                            elif count == 3:
+                                level = "一般"
+                            elif count == 2:
+                                level = "谨慎"
+                            elif count == 1:
+                                level = "不推荐"
+                    if not level:
+                        level = "一般"
+                    if text.endswith("---"):
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
+                except Exception:
+                    pass
                 return text
             return None
 
@@ -350,6 +384,12 @@ class BatchPaperAnalyzer:
                 # 如果是分类归属问题，自动更新 paper.json
                 if question.id == "category_assignment":
                     self._update_category_json(response)
+                    try:
+                        mcat = re.search(r"^归属：\s*([^\r\n]+)", response, flags=re.MULTILINE)
+                        if mcat:
+                            self.secondary_category = mcat.group(1).strip()
+                    except Exception:
+                        pass
 
                 return True
             return False

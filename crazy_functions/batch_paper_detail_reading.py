@@ -251,25 +251,12 @@ class BatchPaperDetailAnalyzer:
                     inner = m.group(1).strip()
                     raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
                     merged, _ = self._merge_keywords_with_db(raw_list)
-                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
-                # 将本次精读使用的分类化提示（prompts）归档到 YAML 头
-                try:
-                    prompts_lines = ["deep_read_prompts:"]
-                    for q in self.questions:
-                        desc = q.description.replace('"', '\\"')
-                        prompts_lines.append(f"  - id: {q.id}")
-                        prompts_lines.append(f"    description: \"{desc}\"")
-                        prompts_lines.append(f"    importance: {q.importance}")
-                    prompts_block = "\n".join(prompts_lines) + "\n"
-                    if text.endswith("---"):
-                        text = text[:-3].rstrip() + "\n" + prompts_block + "---"
-                except Exception:
-                    pass
                 # 注入“归属”二级分类到 YAML 头（仅写入分类路径本身，并用引号包裹）
                 try:
                     if getattr(self, 'secondary_category', None):
-                        escaped = self.secondary_category.replace('"', '\\"')
+                        escaped = self.secondary_category.replace('\"', '\\\"')
                         if text.endswith("---"):
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
