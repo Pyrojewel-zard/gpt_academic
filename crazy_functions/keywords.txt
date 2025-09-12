@@ -1,6 +1,193 @@
+28 GHz
+3-port inductors
+5G
+6G
+AI-enabled layout automation
+AI-rooted EDA
+analog and mixed-signal circuit layout synthesis
+analog circuit design
 analog circuit synthesis
+analog circuits
+Analog IC
+Analog Layout Generation
+analog RF design
+Analog Topology Synthesis
+ANN
+Antiphase technique
+Area Optimization
+artificial intelligence-based optimization
+Artificial neural networks (ANNs)
+Asset management
+automatic layout generation
+balun
+Bayesian
+Bayesian optimization
+broadband
+Broadband power amplifier (PA)
+Broyden
+CAD
+cascode
+circuit design
+circuit generation
+circuit model
+Circuit optimization
+circuit topology
+circuit topology synthesis
+circuit validity
+CMOS
+cognition
+Computer-aided design
+condition monitoring
+constraint learning
+coupled resonators
+decision support systems
+deep learning
+deep learning (DL)
+design automation
+Design Expertise
+design methodology
+device matching
+distributed active transformer (DAT)
+dual-band
+EDA
+Electromagnetic (EM) optimization
+Electromagnetic (EM) parametric modeling
+Electromagnetic (EM) simulation
+Electromagnetic topology optimization
 electronic design automation
+EM-driven design optimization
+end-to-end design automation
+equivalent-circuit model
+error vector magnitude (EVM)
+event detection
+features
+few-shot learning
+Finite element method
+Fixed-outline Floorplanning
+gallium nitride (GaN)
+GAT
+Gaussian process
+Genetic algorithm
+geometric constraints
+global search
+graph attention network
+graph neural network
+Guard Ring Placement
+high-frequency
+Hypergraph Partitioning
+impedance matching
+implicit space mapping (ISM)
+inductors
+Integrated circuits
+integrated inductors
+inverse design
+Kriging
+language models
+large circuit models (LCMs)
 large language model
+layout automation
+Layout design
+layout synthesis
+layout-constrained optimization
+LCP substrate
+linearity
+LLMs
+machine learning
+Machine learning (ML)
+magnetic transformer
+maintenance engineering
+Markov Decision Process
+Matching network
+matrix decomposition
+Matrix Padé via Lanczos
+meta modeling
+Metasurface
+Microwave design
+microwave filters
+millimeter wave
+millimeter wave (mm-Wave)
+millimeter-wave amplifiers
+millimeter-waves integrated circuits
+model-order reduction (MOR)
+monolithic microwave integrated circuit (MMIC)
+Multi-fidelity computational models
+multi-objective
+multi-physics
+multi-port inductors
+multimodal circuit representation learning
+multistate tuning
+netlist
+Neural Architecture Search
+neural networks
+non - linear optimization
+on-chip inductor
+on-chip transformer
+open-source
+optimization
+parameter extraction
+parameter inference
+parasitic - aware routing
+Pareto
+particle-swarm optimization (PSO)
+Passive components synthesis
+passive RF components
+physics-augmented machine learning model
+Placement Quality Prediction
+polynomial chaos
+power amplifier
+power amplifier (PA)
 power converter
+power-added efficiency(PAE)
+preventive maintenance
+PSO
+radar cross section
+Radio-frequency (RF)
+railway engineering
 reinforcement learning
+RF embedded passive
+RF/mm-Wave
+RFIC
+RRAM Computing Circuits
+scattering manipulation
+second-order equivalent circuits
+self-learning
+sensitivity
+Sensitivity analysis
+SiGe
+silicon
+simulated annealing
+six-port
+space mapping
+spiral inductors
+spiral transformer balun (STB)
+statistical
+surrogate
+surrogate assisted models
+surrogate functions
+surrogate modeling
+surrogate-assisted optimization
+symmetric inductors
+symmetry constraint extraction
+synthesis
+tolerances
 topology generation
+topology selection
+transfer function
+Transfer Learning
+transformer
+Transistor modeling
+transmitter
+trust region
+TSMC 40nm Process
+tunable filter
+uncertainty quantification
+UNet
+VCO Inductors
+Voltage-Controlled Oscillator
+wireless sensor networks (WSNs)
+yield
+参数到规格优化
+图神经网络
+模拟电路设计自动化
+深度强化学习
+领域知识
