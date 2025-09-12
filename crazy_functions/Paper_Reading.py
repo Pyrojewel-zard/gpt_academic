@@ -34,6 +34,7 @@ class PaperAnalyzer:
         self.paper_content = ""
         self.results = {}
         self.paper_file_path = None  # 添加论文文件路径属性
+        self.context_history = []  # 存储与LLM的共享上下文（仅注入一次全文）
 
         # 定义论文分析问题库（已合并为4个核心问题）
         self.questions = [
@@ -82,6 +83,16 @@ class PaperAnalyzer:
         # 获取加载的内容
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 将全文一次性作为上下文注入history，后续多轮仅发送问题本身
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                # 以(user, assistant)成对形式缓存，适配底层payload构建
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         else:
@@ -92,8 +103,8 @@ class PaperAnalyzer:
     def _analyze_question(self, question: PaperQuestion) -> Generator:
         """分析单个问题 - 直接显示问题和答案"""
         try:
-            # 创建分析提示
-            prompt = f"请基于以下论文内容回答问题：\n\n{self.paper_content}\n\n问题：{question.question}"
+            # 多轮对话：仅发送问题本身，依赖 context_history 中一次性注入的全文
+            prompt = f"请基于已记住的论文全文回答：{question.question}"
 
             # 使用单线程版本的请求函数
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
@@ -101,7 +112,7 @@ class PaperAnalyzer:
                 inputs_show_user=question.question,  # 显示问题本身
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],  # 空历史，确保每个问题独立分析
+                history=self.context_history or [],  # 复用上下文，避免重复拼接全文
                 sys_prompt="你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
             )
 

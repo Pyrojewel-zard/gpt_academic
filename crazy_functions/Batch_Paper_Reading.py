@@ -15,6 +15,62 @@ import difflib
 import re
 
 
+def _estimate_tokens(text: str, llm_model: str) -> int:
+    """使用已配置模型的tokenizer估算文本token数。"""
+    try:
+        from request_llms.bridge_all import model_info
+        cnt_fn = model_info.get(llm_model, {}).get("token_cnt", None)
+        if cnt_fn is None:
+            # 兜底：若模型未配置，使用gpt-3.5的tokenizer近似
+            cnt_fn = model_info["gpt-3.5-turbo"]["token_cnt"]
+        return int(cnt_fn(text or ""))
+    except Exception:
+        # 无法估计时以字符数近似
+        return len(text or "")
+
+
+def estimate_token_usage(inputs: List[str], outputs: List[str], llm_model: str) -> Dict:
+    """
+    独立的检测函数：估算一组交互的输入/输出token消耗。
+
+    Args:
+        inputs: 每次提问的输入列表（字符串）。
+        outputs: 每次回答的输出列表（字符串）。
+        llm_model: 用于估算token的模型名（需在配置中可用）。
+
+    Returns:
+        dict: {
+            'model': str,
+            'items': [ {'input_tokens': int, 'output_tokens': int, 'total_tokens': int} ... ],
+            'sum_input_tokens': int,
+            'sum_output_tokens': int,
+            'sum_total_tokens': int,
+        }
+    """
+    n = max(len(inputs or []), len(outputs or []))
+    items = []
+    sum_in = 0
+    sum_out = 0
+    for i in range(n):
+        inp = inputs[i] if i < len(inputs) else ""
+        out = outputs[i] if i < len(outputs) else ""
+        ti = _estimate_tokens(inp, llm_model)
+        to = _estimate_tokens(out, llm_model)
+        items.append({
+            'input_tokens': ti,
+            'output_tokens': to,
+            'total_tokens': ti + to,
+        })
+        sum_in += ti
+        sum_out += to
+    return {
+        'model': llm_model,
+        'items': items,
+        'sum_input_tokens': sum_in,
+        'sum_output_tokens': sum_out,
+        'sum_total_tokens': sum_in + sum_out,
+    }
+
 @dataclass
 class PaperQuestion:
     """论文分析问题类"""
@@ -37,6 +93,11 @@ class BatchPaperAnalyzer:
         self.paper_content = ""
         self.results = {}
         self.paper_file_path = None
+        self.secondary_category = None
+        self.context_history = []  # 与LLM共享的上下文（每篇论文注入一次全文）
+        # 统计用：记录每次LLM交互的输入与输出
+        self._token_inputs: List[str] = []
+        self._token_outputs: List[str] = []
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -103,17 +164,17 @@ class BatchPaperAnalyzer:
                     "请基于论文内容，绘制论文核心算法或核心思路的流程图，若论文包含多个相对独立的模块或阶段，请分别给出多个流程图。\n\n"
                     "要求：\n"
                     "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
-                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
                     "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
                     "4) 仅聚焦核心逻辑，避免过度细节；\n"
                     "5) 若只有单一核心流程，仅输出一个流程图；\n"
                     "6) 格式约束：\n"
                     "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
                     "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
-                    "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
                     "7) 示例：\n"
                     "```mermaid\n"
-                    "flowchart LR\n"
+                    "flowchart TD\n"
                     "    A[\"输入\"] --> B(\"处理\")\n"
                     "    B --> C{\"是否满足条件\"}\n"
                     "    C --> D[\"输出1\"]\n"
@@ -269,11 +330,44 @@ class BatchPaperAnalyzer:
                     inner = m.group(1).strip()
                     # 简单解析列表内容，支持带引号或不带引号的英文关键词
                     # 拆分逗号，同时去掉包裹引号
-                    raw_list = [x.strip().strip('"\'\'') for x in inner.split(',') if x.strip()]
+                    raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
                     merged, _ = self._merge_keywords_with_db(raw_list)
                     # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
-                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
+                # 注入“归属”二级分类（若可用）
+                try:
+                    if getattr(self, 'secondary_category', None):
+                        escaped = self.secondary_category.replace('\"', '\\\"')
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
+                except Exception:
+                    pass
+                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失再回退到默认
+                try:
+                    level = None
+                    try:
+                        judge = self.results.get("worth_reading_judgment", "")
+                        if isinstance(judge, str) and judge:
+                            if "强烈推荐" in judge:
+                                level = "强烈推荐"
+                            elif "不推荐" in judge:
+                                level = "不推荐"
+                            elif "谨慎" in judge:
+                                level = "谨慎"
+                            elif "一般" in judge:
+                                level = "一般"
+                            elif "推荐" in judge:
+                                level = "推荐"
+                    except Exception:
+                        pass
+                    if not level:
+                        # 兜底：维持原默认
+                        level = "一般"
+                    if text.endswith("---"):
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
+                except Exception:
+                    pass
                 return text
             return None
 
@@ -323,6 +417,15 @@ class BatchPaperAnalyzer:
         # 获取加载的内容
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 注入一次全文到上下文历史，后续多轮仅发送问题
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         else:
@@ -333,23 +436,36 @@ class BatchPaperAnalyzer:
     def _analyze_question(self, question: PaperQuestion) -> Generator:
         """分析单个问题 - 直接显示问题和答案"""
         try:
-            prompt = f"请基于以下论文内容回答问题：\n\n{self.paper_content}\n\n问题：{question.question}"
+            # 多轮对话：仅发送问题本身，依赖 context_history 中一次性注入的全文
+            prompt = f"请基于已记住的论文全文回答：{question.question}"
 
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,
                 inputs_show_user=question.question,
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],
+                history=self.context_history or [],
                 sys_prompt="你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
             )
 
             if response:
                 self.results[question.id] = response
+                # 记录本轮交互的输入与输出用于token估算
+                try:
+                    self._token_inputs.append(prompt)
+                    self._token_outputs.append(response)
+                except Exception:
+                    pass
 
                 # 如果是分类归属问题，自动更新 paper.json
                 if question.id == "category_assignment":
                     self._update_category_json(response)
+                    try:
+                        mcat = re.search(r"^归属：\s*([^\r\n]+)", response, flags=re.MULTILINE)
+                        if mcat:
+                            self.secondary_category = mcat.group(1).strip()
+                    except Exception:
+                        pass
 
                 return True
             return False
@@ -424,6 +540,20 @@ class BatchPaperAnalyzer:
             for q in self.questions:
                 if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
                     md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+
+            # 追加 Token 估算结果
+            try:
+                stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
+                if stats and stats.get('sum_total_tokens', 0) > 0:
+                    md_parts.append(
+                        "\n\n## Token 估算\n\n"
+                        f"- 模型: {stats.get('model')}\n\n"
+                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
+                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
+                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n"
+                    )
+            except Exception:
+                pass
 
             md_content = "".join(md_parts)
 

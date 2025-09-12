@@ -34,6 +34,7 @@ class BatchPaperDetailAnalyzer:
         self.results: Dict[str, str] = {}
         self.paper_file_path: str = None
         self.secondary_category: str = None
+        self.context_history: List[str] = []  # 与LLM共享的上下文（每篇论文注入一次全文）
 
         # 精读维度（更深入的技术细节、可复现性、理论依据等）
         self.questions: List[DeepReadQuestion] = [
@@ -251,48 +252,34 @@ class BatchPaperDetailAnalyzer:
                     inner = m.group(1).strip()
                     raw_list = [x.strip().strip('\"\'\'') for x in inner.split(',') if x.strip()]
                     merged, _ = self._merge_keywords_with_db(raw_list)
-                    rebuilt = ', '.join([f'"{k}"' for k in merged])
+                    rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
-                # 将本次精读使用的分类化提示（prompts）归档到 YAML 头
-                try:
-                    prompts_lines = ["deep_read_prompts:"]
-                    for q in self.questions:
-                        desc = q.description.replace('"', '\\"')
-                        prompts_lines.append(f"  - id: {q.id}")
-                        prompts_lines.append(f"    description: \"{desc}\"")
-                        prompts_lines.append(f"    importance: {q.importance}")
-                    prompts_block = "\n".join(prompts_lines) + "\n"
-                    if text.endswith("---"):
-                        text = text[:-3].rstrip() + "\n" + prompts_block + "---"
-                except Exception:
-                    pass
                 # 注入“归属”二级分类到 YAML 头（仅写入分类路径本身，并用引号包裹）
                 try:
                     if getattr(self, 'secondary_category', None):
-                        escaped = self.secondary_category.replace('"', '\\"')
+                        escaped = self.secondary_category.replace('\"', '\\\"')
                         if text.endswith("---"):
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
                     pass
-                # 基于 stars 推断“论文重要程度”并写入（中文等级，值用引号包裹）
+                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失回退默认
                 try:
-                    m_star = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
                     level = None
-                    if m_star:
-                        inner = m_star.group(1)
-                        m_seq = re.search(r"(⭐{1,5})", inner)
-                        if m_seq:
-                            count = len(m_seq.group(1))
-                            if count >= 5:
+                    try:
+                        judge = self.results.get("worth_reading_judgment", "")
+                        if isinstance(judge, str) and judge:
+                            if "强烈推荐" in judge:
                                 level = "强烈推荐"
-                            elif count == 4:
-                                level = "推荐"
-                            elif count == 3:
-                                level = "一般"
-                            elif count == 2:
-                                level = "谨慎"
-                            elif count == 1:
+                            elif "不推荐" in judge:
                                 level = "不推荐"
+                            elif "谨慎" in judge:
+                                level = "谨慎"
+                            elif "一般" in judge:
+                                level = "一般"
+                            elif "推荐" in judge:
+                                level = "推荐"
+                    except Exception:
+                        pass
                     if not level:
                         level = "一般"
                     if text.endswith("---"):
@@ -314,6 +301,15 @@ class BatchPaperDetailAnalyzer:
         yield from loader.execute_single_file(paper_path)
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 注入一次全文到上下文历史，后续多轮仅发送问题
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         self.chatbot.append(["错误", "无法读取论文内容，请检查文件是否有效"])
@@ -323,11 +319,9 @@ class BatchPaperDetailAnalyzer:
     def _ask(self, q: DeepReadQuestion) -> Generator:
         try:
             prompt = (
-                "请基于以下论文内容进行精读分析，并严格围绕问题作答。\n"
+                "请基于已记住的论文全文进行精读分析，并严格围绕问题作答。\n"
                 "注意：请避免提供任何代码、伪代码、命令行或具体实现细节；"
                 "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n\n"
-                
-                f"论文内容：\n{self.paper_content}\n\n"
                 f"问题：{q.question}"
             )
             resp = yield from request_gpt_model_in_new_thread_with_ui_alive(
@@ -335,7 +329,7 @@ class BatchPaperDetailAnalyzer:
                 inputs_show_user=q.question,
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],
+                history=self.context_history or [],
                 sys_prompt=(
                     "你是资深研究员，输出以概念与方法论层面为主，不包含任何代码或伪代码。"
                     "如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。"
