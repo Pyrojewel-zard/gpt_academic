@@ -283,26 +283,26 @@ class BatchPaperAnalyzer:
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
                     pass
-                # 基于 stars 推断中文“论文重要程度”
+                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失再回退到默认
                 try:
-                    m_star = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
                     level = None
-                    if m_star:
-                        inner = m_star.group(1)
-                        m_seq = re.search(r"(⭐{1,5})", inner)
-                        if m_seq:
-                            count = len(m_seq.group(1))
-                            if count >= 5:
+                    try:
+                        judge = self.results.get("worth_reading_judgment", "")
+                        if isinstance(judge, str) and judge:
+                            if "强烈推荐" in judge:
                                 level = "强烈推荐"
-                            elif count == 4:
-                                level = "推荐"
-                            elif count == 3:
-                                level = "一般"
-                            elif count == 2:
-                                level = "谨慎"
-                            elif count == 1:
+                            elif "不推荐" in judge:
                                 level = "不推荐"
+                            elif "谨慎" in judge:
+                                level = "谨慎"
+                            elif "一般" in judge:
+                                level = "一般"
+                            elif "推荐" in judge:
+                                level = "推荐"
+                    except Exception:
+                        pass
                     if not level:
+                        # 兜底：维持原默认
                         level = "一般"
                     if text.endswith("---"):
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
