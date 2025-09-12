@@ -34,6 +34,7 @@ class BatchPaperDetailAnalyzer:
         self.results: Dict[str, str] = {}
         self.paper_file_path: str = None
         self.secondary_category: str = None
+        self.context_history: List[str] = []  # 与LLM共享的上下文（每篇论文注入一次全文）
 
         # 精读维度（更深入的技术细节、可复现性、理论依据等）
         self.questions: List[DeepReadQuestion] = [
@@ -300,6 +301,15 @@ class BatchPaperDetailAnalyzer:
         yield from loader.execute_single_file(paper_path)
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 注入一次全文到上下文历史，后续多轮仅发送问题
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         self.chatbot.append(["错误", "无法读取论文内容，请检查文件是否有效"])
@@ -309,11 +319,9 @@ class BatchPaperDetailAnalyzer:
     def _ask(self, q: DeepReadQuestion) -> Generator:
         try:
             prompt = (
-                "请基于以下论文内容进行精读分析，并严格围绕问题作答。\n"
+                "请基于已记住的论文全文进行精读分析，并严格围绕问题作答。\n"
                 "注意：请避免提供任何代码、伪代码、命令行或具体实现细节；"
                 "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n\n"
-                
-                f"论文内容：\n{self.paper_content}\n\n"
                 f"问题：{q.question}"
             )
             resp = yield from request_gpt_model_in_new_thread_with_ui_alive(
@@ -321,7 +329,7 @@ class BatchPaperDetailAnalyzer:
                 inputs_show_user=q.question,
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],
+                history=self.context_history or [],
                 sys_prompt=(
                     "你是资深研究员，输出以概念与方法论层面为主，不包含任何代码或伪代码。"
                     "如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。"

@@ -34,6 +34,7 @@ class BatchRFICAnalyzer:
         self.results = {}
         self.paper_file_path = None
         self.yaml_header = None
+        self.context_history: List[str] = []  # 与LLM共享的上下文（每篇论文注入一次全文）
 
         # 定义射频集成电路论文分析问题库（专门针对RF IC领域）
         self.questions = [
@@ -264,6 +265,15 @@ class BatchRFICAnalyzer:
         # 获取加载的内容
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 注入一次全文到上下文历史，后续多轮仅发送问题
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         else:
@@ -274,11 +284,8 @@ class BatchRFICAnalyzer:
     def _analyze_question(self, question: RFICQuestion) -> Generator:
         """分析单个问题 - 专门针对RF IC领域"""
         try:
-            # 创建针对RF IC的分析提示
-            prompt = f"""请基于以下射频集成电路论文内容，从RF IC专业角度回答问题：
-
-论文内容：
-{self.paper_content}
+            # 创建针对RF IC的分析提示（不再重复发送全文）
+            prompt = f"""请基于已记住的射频集成电路论文全文，从RF IC专业角度回答问题：
 
 问题：{question.question}
 
@@ -296,7 +303,7 @@ class BatchRFICAnalyzer:
                 inputs_show_user=question.question,  # 显示问题本身
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],  # 空历史，确保每个问题独立分析
+                history=self.context_history or [],  # 复用上下文
                 sys_prompt="你是一个专业的射频集成电路(RF IC)分析专家，具有深厚的电路设计、半导体工艺和无线通信系统知识。请从RF IC专业角度深入分析论文，使用准确的术语，提供有见地的技术评估。"
             )
 

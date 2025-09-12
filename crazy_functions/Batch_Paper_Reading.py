@@ -15,6 +15,62 @@ import difflib
 import re
 
 
+def _estimate_tokens(text: str, llm_model: str) -> int:
+    """使用已配置模型的tokenizer估算文本token数。"""
+    try:
+        from request_llms.bridge_all import model_info
+        cnt_fn = model_info.get(llm_model, {}).get("token_cnt", None)
+        if cnt_fn is None:
+            # 兜底：若模型未配置，使用gpt-3.5的tokenizer近似
+            cnt_fn = model_info["gpt-3.5-turbo"]["token_cnt"]
+        return int(cnt_fn(text or ""))
+    except Exception:
+        # 无法估计时以字符数近似
+        return len(text or "")
+
+
+def estimate_token_usage(inputs: List[str], outputs: List[str], llm_model: str) -> Dict:
+    """
+    独立的检测函数：估算一组交互的输入/输出token消耗。
+
+    Args:
+        inputs: 每次提问的输入列表（字符串）。
+        outputs: 每次回答的输出列表（字符串）。
+        llm_model: 用于估算token的模型名（需在配置中可用）。
+
+    Returns:
+        dict: {
+            'model': str,
+            'items': [ {'input_tokens': int, 'output_tokens': int, 'total_tokens': int} ... ],
+            'sum_input_tokens': int,
+            'sum_output_tokens': int,
+            'sum_total_tokens': int,
+        }
+    """
+    n = max(len(inputs or []), len(outputs or []))
+    items = []
+    sum_in = 0
+    sum_out = 0
+    for i in range(n):
+        inp = inputs[i] if i < len(inputs) else ""
+        out = outputs[i] if i < len(outputs) else ""
+        ti = _estimate_tokens(inp, llm_model)
+        to = _estimate_tokens(out, llm_model)
+        items.append({
+            'input_tokens': ti,
+            'output_tokens': to,
+            'total_tokens': ti + to,
+        })
+        sum_in += ti
+        sum_out += to
+    return {
+        'model': llm_model,
+        'items': items,
+        'sum_input_tokens': sum_in,
+        'sum_output_tokens': sum_out,
+        'sum_total_tokens': sum_in + sum_out,
+    }
+
 @dataclass
 class PaperQuestion:
     """论文分析问题类"""
@@ -38,6 +94,10 @@ class BatchPaperAnalyzer:
         self.results = {}
         self.paper_file_path = None
         self.secondary_category = None
+        self.context_history = []  # 与LLM共享的上下文（每篇论文注入一次全文）
+        # 统计用：记录每次LLM交互的输入与输出
+        self._token_inputs: List[str] = []
+        self._token_outputs: List[str] = []
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -357,6 +417,15 @@ class BatchPaperAnalyzer:
         # 获取加载的内容
         if len(self.history) >= 2 and self.history[-2]:
             self.paper_content = self.history[-2]
+            # 注入一次全文到上下文历史，后续多轮仅发送问题
+            try:
+                remembered = (
+                    "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
+                    f"{self.paper_content}"
+                )
+                self.context_history = [remembered, "已接收并记住论文内容"]
+            except Exception:
+                self.context_history = []
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return True
         else:
@@ -367,19 +436,26 @@ class BatchPaperAnalyzer:
     def _analyze_question(self, question: PaperQuestion) -> Generator:
         """分析单个问题 - 直接显示问题和答案"""
         try:
-            prompt = f"请基于以下论文内容回答问题：\n\n{self.paper_content}\n\n问题：{question.question}"
+            # 多轮对话：仅发送问题本身，依赖 context_history 中一次性注入的全文
+            prompt = f"请基于已记住的论文全文回答：{question.question}"
 
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,
                 inputs_show_user=question.question,
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
-                history=[],
+                history=self.context_history or [],
                 sys_prompt="你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
             )
 
             if response:
                 self.results[question.id] = response
+                # 记录本轮交互的输入与输出用于token估算
+                try:
+                    self._token_inputs.append(prompt)
+                    self._token_outputs.append(response)
+                except Exception:
+                    pass
 
                 # 如果是分类归属问题，自动更新 paper.json
                 if question.id == "category_assignment":
@@ -464,6 +540,20 @@ class BatchPaperAnalyzer:
             for q in self.questions:
                 if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
                     md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+
+            # 追加 Token 估算结果
+            try:
+                stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
+                if stats and stats.get('sum_total_tokens', 0) > 0:
+                    md_parts.append(
+                        "\n\n## Token 估算\n\n"
+                        f"- 模型: {stats.get('model')}\n\n"
+                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
+                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
+                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n"
+                    )
+            except Exception:
+                pass
 
             md_content = "".join(md_parts)
 
