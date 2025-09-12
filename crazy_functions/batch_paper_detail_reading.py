@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, List, Generator
-
+from crazy_functions.Batch_Paper_Reading import estimate_token_usage
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
@@ -35,6 +35,9 @@ class BatchPaperDetailAnalyzer:
         self.paper_file_path: str = None
         self.secondary_category: str = None
         self.context_history: List[str] = []  # 与LLM共享的上下文（每篇论文注入一次全文）
+        # 统计用：记录每次LLM交互的输入与输出
+        self._token_inputs: List[str] = []
+        self._token_outputs: List[str] = []
 
         # 精读维度（更深入的技术细节、可复现性、理论依据等）
         self.questions: List[DeepReadQuestion] = [
@@ -337,6 +340,12 @@ class BatchPaperDetailAnalyzer:
             )
             if resp:
                 self.results[q.id] = resp
+                # 记录本轮交互的输入与输出用于token估算
+                try:
+                    self._token_inputs.append(prompt)
+                    self._token_outputs.append(resp)
+                except Exception:
+                    pass
                 return True
             return False
         except Exception as e:
@@ -405,6 +414,20 @@ class BatchPaperDetailAnalyzer:
         for q in self.questions:
             if q.id in self.results and q.id not in {"exec_summary_md", "mermaid_flowcharts"}:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+
+        # 追加 Token 估算结果
+        try:
+            stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
+            if stats and stats.get('sum_total_tokens', 0) > 0:
+                parts.append(
+                    "\n\n## Token 估算\n\n"
+                    f"- 模型: {stats.get('model')}\n\n"
+                    f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
+                    f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
+                    f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n"
+                )
+        except Exception:
+            pass
 
         content = "".join(parts)
         if hasattr(self, 'yaml_header') and self.yaml_header:

@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, List, Generator, Tuple
+from crazy_functions.Batch_Paper_Reading import estimate_token_usage
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
@@ -35,6 +36,9 @@ class BatchRFICAnalyzer:
         self.paper_file_path = None
         self.yaml_header = None
         self.context_history: List[str] = []  # 与LLM共享的上下文（每篇论文注入一次全文）
+        # 统计用：记录每次LLM交互的输入与输出
+        self._token_inputs: List[str] = []
+        self._token_outputs: List[str] = []
 
         # 定义射频集成电路论文分析问题库（专门针对RF IC领域）
         self.questions = [
@@ -309,6 +313,12 @@ class BatchRFICAnalyzer:
 
             if response:
                 self.results[question.id] = response
+                # 记录本轮交互的输入与输出用于token估算
+                try:
+                    self._token_inputs.append(prompt)
+                    self._token_outputs.append(response)
+                except Exception:
+                    pass
                 return True
             return False
 
@@ -386,6 +396,20 @@ class BatchRFICAnalyzer:
             for q in self.questions:
                 if q.id in self.results:
                     md_content += f"### {q.description}\n\n{self.results[q.id]}\n\n"
+
+            # 追加 Token 估算结果
+            try:
+                stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
+                if stats and stats.get('sum_total_tokens', 0) > 0:
+                    md_content += (
+                        "## Token 估算\n\n"
+                        f"- 模型: {stats.get('model')}\n\n"
+                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
+                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
+                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n\n"
+                    )
+            except Exception:
+                pass
 
             result_file = write_history_to_file(
                 history=[md_content],
