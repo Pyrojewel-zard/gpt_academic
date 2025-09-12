@@ -206,23 +206,22 @@ class BatchRFICAnalyzer:
             # 生成简易 YAML 头：仅包含 deep_read_prompts 与 论文重要程度
             try:
                 prompts_lines = ["---"]
-                # 从结果中粗略推断星级（若无，默认⭐⭐⭐）并映射到中文等级
-                stars = "⭐⭐⭐"
+                # 从 worth_reading_judgment 结果文本直接推断中文等级
                 level = "一般"
                 try:
-                    # 若有 worth_reading_judgment，可在文本中寻找“强烈推荐/推荐/一般/不推荐”
                     judge = self.results.get("worth_reading_judgment", "")
                     if "强烈推荐" in judge:
-                        stars = "⭐⭐⭐⭐⭐"; level = "强烈推荐"
-                    elif "推荐" in judge and "强烈" not in judge:
-                        stars = "⭐⭐⭐⭐"; level = "推荐"
-                    elif "谨慎" in judge:
-                        stars = "⭐⭐"; level = "谨慎"
+                        level = "强烈推荐"
                     elif "不推荐" in judge:
-                        stars = "⭐"; level = "不推荐"
+                        level = "不推荐"
+                    elif "谨慎" in judge:
+                        level = "谨慎"
+                    elif "推荐" in judge:
+                        level = "推荐"
+                    elif "一般" in judge:
+                        level = "一般"
                 except Exception:
                     pass
-                prompts_lines.append(f"stars: [\"{stars}\"]")
                 prompts_lines.append(f"论文重要程度: \"{level}\"")
                 prompts_lines.append("---")
                 self.yaml_header = "\n".join(prompts_lines)
