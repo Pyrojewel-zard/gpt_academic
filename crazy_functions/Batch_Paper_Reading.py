@@ -368,6 +368,12 @@ class BatchPaperAnalyzer:
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
                 except Exception:
                     pass
+                # 追加是否精读（默认未精读）
+                try:
+                    if text.endswith("---"):
+                        text = text[:-3].rstrip() + f"\n是否精读: \"未精读\"\n---"
+                except Exception:
+                    pass
                 return text
             return None
 
