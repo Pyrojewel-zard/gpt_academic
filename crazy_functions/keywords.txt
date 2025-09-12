@@ -1,13 +1,60 @@
+28 GHz
+3-port inductors
+5G
+6G
+AI-enabled layout automation
+AI-rooted EDA
+analog and mixed-signal circuit layout synthesis
+analog circuit design
 analog circuit synthesis
-broadband design
-coupled resonators
 electronic design automation
-impedance transformation
 large language model
-magnetic transformer
-matching network
-millimeter-wave
 power converter
-power loss
 reinforcement learning
+RF embedded passive
+RF/mm-Wave
+RFIC
+RRAM Computing Circuits
+scattering manipulation
+second-order equivalent circuits
+self-learning
+sensitivity
+Sensitivity analysis
+SiGe
+silicon
+simulated annealing
+six-port
+space mapping
+spiral inductors
+spiral transformer balun (STB)
+statistical
+surrogate
+surrogate assisted models
+surrogate functions
+surrogate modeling
+surrogate-assisted optimization
+symmetric inductors
+symmetry constraint extraction
+synthesis
+tolerances
 topology generation
+topology selection
+transfer function
+Transfer Learning
+transformer
+Transistor modeling
+transmitter
+trust region
+TSMC 40nm Process
+tunable filter
+uncertainty quantification
+UNet
+VCO Inductors
+Voltage-Controlled Oscillator
+wireless sensor networks (WSNs)
+yield
+参数到规格优化
+图神经网络
+模拟电路设计自动化
+深度强化学习
+领域知识

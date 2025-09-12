@@ -1344,7 +1344,7 @@ for model in [m for m in AVAIL_LLM_MODELS if m.startswith("volcengine-")]:
             "tokenizer": tokenizer_gpt35,
             "token_cnt": get_token_num_gpt35,
         },
-        "kimi-k2-250711": {
+        "kimi-k2-250905": {
             "max_token": 64000,
             "enable_reasoning": False,
             "can_multi_thread": True,
