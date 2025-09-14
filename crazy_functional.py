@@ -777,6 +777,40 @@ def get_crazy_functions():
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
 
+    try:
+        from crazy_functions.undefine_paper_reading import 统一批量论文速读
+        function_plugins.update(
+            {
+                "统一批量论文速读": {
+                    "Group": "学术",
+                    "Color": "stop",
+                    "AsButton": True,
+                    "Info": "智能识别论文主题（通用/RF IC），自动选择最适合的分析策略，为每篇论文生成专业的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
+                    "Function": HotReload(统一批量论文速读),
+                },
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
+
+    try:
+        from crazy_functions.undefine_paper_detail_reading import 批量论文精读
+        function_plugins.update(
+            {
+                "智能批量论文精读": {
+                    "Group": "学术",
+                    "Color": "stop",
+                    "AsButton": True,
+                    "Info": "智能识别论文主题（通用/IC），自动选择最适合的递进式精读分析策略，为每篇论文生成面向实现与复现的深度技术报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
+                    "Function": HotReload(批量论文精读),
+                },
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
+
 
     # try:
     #     from crazy_functions.高级功能函数模板 import 测试图表渲染
