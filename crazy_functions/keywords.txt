@@ -10,6 +10,7 @@ Adversarial Reinforcement Learning
 AI-enabled layout automation
 AI-rooted EDA
 analog and mixed-signal circuit layout synthesis
+analog automation
 analog circuit design
 analog circuit synthesis
 analog IC placement
@@ -23,6 +24,7 @@ ASAP 7nm
 ASK modulator
 AutoCkt
 Automated design
+automation of analog design
 Balun
 Berkeley Analog Generator
 broadband
