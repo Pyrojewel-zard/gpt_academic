@@ -86,10 +86,20 @@ class UnifiedBatchPaperAnalyzer:
         # 统计用：记录每次LLM交互的输入与输出
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
+        
+        # ---------- 读取分类树 ----------
+        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
+        with open(json_path, 'r', encoding='utf-8') as f:
+            self.category_tree = json.load(f)          # Dict[str, List[str]]
+
+        # 生成给 LLM 的当前分类清单
+        category_lines = [f"{main} -> {', '.join(subs)}"
+                        for main, subs in self.category_tree.items()]
+        self.category_prompt_str = '\n'.join(category_lines)
 
         # 定义统一的问题库（包含通用和RF IC专用问题）
         self.questions = [
-            # 通用问题（适用于所有论文）
+            # 通用问题（适用于所有论文）- 完全照搬 Batch_Paper_Reading.py
             PaperQuestion(
                 id="research_and_methods",
                 question="这篇论文的主要研究问题、目标和方法是什么？请分析：1)论文的核心研究问题和研究动机；2)论文提出的关键方法、模型或理论框架；3)这些方法如何解决研究问题。",
@@ -120,13 +130,79 @@ class UnifiedBatchPaperAnalyzer:
             ),
             PaperQuestion(
                 id="worth_reading_judgment",
-                question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出'强烈推荐'、'推荐'、'一般'或'不推荐'的最终评级，并简要说明理由。",
+                question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出\"强烈推荐\"、\"推荐\"、\"一般\"或\"不推荐\"的最终评级，并简要说明理由。",
                 importance=2,
                 description="是否值得精读",
                 domain="both"
             ),
+            PaperQuestion(
+                id="category_assignment",
+                question=(
+                    "请根据论文内容，判断其最准确的二级分类归属。\n\n"
+                    "当前分类树如下（一级 -> 二级）：\n"
+                    f"{self.category_prompt_str}\n\n"
+                    "要求：\n"
+                    "1) 若完全匹配现有二级分类，直接回答：\n"
+                    "   归属：<一级类别> -> <二级子分类>\n"
+                    "2) 若需新建二级分类，回答：\n"
+                    "   新增二级：<一级类别> -> <新子分类名>\n"
+                    "3) 若需新建一级类别，回答：\n"
+                    "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
+                    "4) 用一句话说明判断理由。"
+                ),
+                importance=1,
+                description="论文二级分类归属",
+                domain="both"
+            ),              
+            PaperQuestion(
+                id="core_algorithm_flowcharts",
+                question=(
+                    "请基于论文内容，绘制论文核心算法或核心思路的流程图，若论文包含多个相对独立的模块或阶段，请分别给出多个流程图。\n\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
+                    "4) 仅聚焦核心逻辑，避免过度细节；\n"
+                    "5) 若只有单一核心流程，仅输出一个流程图；\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
+                    "7) 示例：\n"
+                    "```mermaid\n"
+                    "flowchart TD\n"
+                    "    A[\"输入\"] --> B(\"处理\")\n"
+                    "    B --> C{\"是否满足条件\"}\n"
+                    "    C --> D[\"输出1\"]\n"
+                    "    C --> |\"否\"| E[\"输出2\"]\n"
+                    "```"
+                ),
+                importance=5,
+                description="核心算法/思路流程图（Mermaid）",
+                domain="both"
+            ),
+            PaperQuestion(
+                id="core_idea_ppt_md",
+                question=(
+                    "请生成一份用于 PPT 的'论文核心思路与算法'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括论文做了什么、为何有效。\n\n"
+                    "# 模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'图解要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支。\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'图解要点'。\n\n"
+                    "# 关键算法摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景。\n\n"
+                    "# 应用与效果（≤ 3 条，可省略）\n"
+                    "- 场景/指标/收益。\n\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
+                ),
+                importance=5,
+                description="PPT 用核心思路与算法（Markdown 极简版）",
+                domain="both"
+            ),
             
-            # RF IC专用问题
+            # RF IC专用问题 - 完全照搬 batch_rf_ic_reading.py
             PaperQuestion(
                 id="circuit_architecture",
                 question="这篇RF IC论文的电路架构和拓扑结构是什么？请分析：1)核心电路架构（如LNA、PA、混频器、VCO、PLL等）；2)电路拓扑结构的特点和优势；3)关键电路模块的设计思路；4)整体系统级联和接口设计。",
@@ -224,10 +300,10 @@ class UnifiedBatchPaperAnalyzer:
     def _get_domain_specific_questions(self) -> List[PaperQuestion]:
         """根据论文领域获取相应的问题列表"""
         if self.paper_domain == "rf_ic":
-            # RF IC论文：包含通用问题 + RF IC专用问题
+            # RF IC论文：包含通用问题 + RF IC专用问题（包括分类问题）
             return [q for q in self.questions if q.domain in ["both", "rf_ic"]]
         else:
-            # 通用论文：只包含通用问题
+            # 通用论文：只包含通用问题（包括分类问题）
             return [q for q in self.questions if q.domain in ["both", "general"]]
 
     def _get_domain_specific_system_prompt(self) -> str:
@@ -324,6 +400,31 @@ class UnifiedBatchPaperAnalyzer:
         self._save_keywords_db(db)
         return canonical_list, db
 
+    def _update_category_json(self, llm_answer: str):
+        """
+        解析 LLM 返回的归属/新增指令，并更新 paper.json
+        """
+        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
+
+        # 1) 新增一级
+        m1 = re.search(r'新增一级：(.+?) *-> *\[(.+?)\]', llm_answer)
+        if m1:
+            new_main = m1.group(1).strip()
+            new_subs = [s.strip() for s in m1.group(2).split(',')]
+            self.category_tree[new_main] = new_subs
+        else:
+            # 2) 新增二级
+            m2 = re.search(r'新增二级：(.+?) *-> *(.+)', llm_answer)
+            if m2:
+                main_cat = m2.group(1).strip()
+                new_sub = m2.group(2).strip()
+                if main_cat in self.category_tree and new_sub not in self.category_tree[main_cat]:
+                    self.category_tree[main_cat].append(new_sub)
+
+        # 写回
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(self.category_tree, f, ensure_ascii=False, indent=4)
+
     def _clean_yaml_list(self, yaml_text: str, list_fields: List[str]) -> str:
         """清理YAML文本中列表字段的None值"""
         import re
@@ -404,6 +505,15 @@ class UnifiedBatchPaperAnalyzer:
                     # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
                     rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
+                
+                # 注入"归属"二级分类（若可用）
+                try:
+                    if getattr(self, 'secondary_category', None):
+                        escaped = self.secondary_category.replace('\"', '\\\"')
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
+                except Exception:
+                    pass
                 
                 # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失再回退到默认
                 try:
@@ -517,6 +627,16 @@ class UnifiedBatchPaperAnalyzer:
                 except Exception:
                     pass
 
+                # 如果是分类归属问题，自动更新 paper.json
+                if question.id == "category_assignment":
+                    self._update_category_json(response)
+                    try:
+                        mcat = re.search(r"^归属：\s*([^\r\n]+)", response, flags=re.MULTILINE)
+                        if mcat:
+                            self.secondary_category = mcat.group(1).strip()
+                    except Exception:
+                        pass
+
                 return True
             return False
 
@@ -557,7 +677,7 @@ class UnifiedBatchPaperAnalyzer:
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=[],
-                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。"
+                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。"
             )
 
             if response:
@@ -587,21 +707,29 @@ class UnifiedBatchPaperAnalyzer:
 
         # 保存为Markdown文件
         try:
-            md_content = ""
-            if hasattr(self, 'yaml_header') and self.yaml_header:
-                md_content += self.yaml_header + "\n\n"
-            
+            md_parts = []
+            # 标题与整体报告（稍后在前加入 YAML 头）
             domain_title = "射频集成电路论文专业解读报告" if self.paper_domain == "rf_ic" else "论文快速解读报告"
-            md_content += f"# {domain_title}\n\n"
-            md_content += f"**分析时间**: {timestamp}\n"
-            md_content += f"**论文文件**: {os.path.basename(paper_file_path) if paper_file_path else '未知'}\n"
-            md_content += f"**分析领域**: {domain_prefix}\n\n"
-            md_content += f"## 报告摘要\n\n{report}\n\n"
-            md_content += f"## 详细分析\n\n"
-            
+            md_parts.append(f"{domain_title}\n\n{report}")
+
+            # 优先写入：PPT 极简摘要（若有）
+            if "core_idea_ppt_md" in self.results:
+                md_parts.append(f"\n\n## PPT 摘要\n\n{self.results['core_idea_ppt_md']}")
+
+            # 其次写入：核心流程图（Mermaid）（若有，保持代码块原样）
+            if "core_algorithm_flowcharts" in self.results:
+                md_parts.append(f"\n\n## 核心流程图\n\n{self.results['core_algorithm_flowcharts']}")
+
+            # 其余分析项按问题列表顺序写入，但跳过已写入的两个
             for q in self.questions:
-                if q.id in self.results:
-                    md_content += f"### {q.description}\n\n{self.results[q.id]}\n\n"
+                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
+                    md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+
+            md_content = "".join(md_parts)
+
+            # 若已生成 YAML 头，则置于文首
+            if hasattr(self, 'yaml_header') and self.yaml_header:
+                md_content = f"{self.yaml_header}\n\n" + md_content
 
             # 追加 Token 估算结果
             try:

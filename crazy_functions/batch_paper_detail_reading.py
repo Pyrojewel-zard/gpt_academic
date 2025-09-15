@@ -39,109 +39,161 @@ class BatchPaperDetailAnalyzer:
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
 
-        # 精读维度（更深入的技术细节、可复现性、理论依据等）
+        # 精读维度（递进式深入分析，从宏观到微观，从理论到实践）
         self.questions: List[DeepReadQuestion] = [
+            # 第一层：问题域与动机分析
             DeepReadQuestion(
-                id="problem_statement_and_contributions",
-                description="问题定义与贡献",
+                id="problem_domain_and_motivation",
+                description="问题域与动机分析",
                 importance=5,
                 question=(
-                    "请严谨概述论文要解决的问题、形式化定义与边界条件；"
-                    "梳理论文的核心贡献（按重要性排序），并逐条说明其与已有工作的本质区别。"
+                    "【第一层：问题域理解】\n"
+                    "请深入分析论文的研究背景与动机：\n"
+                    "1) 论文要解决的核心问题是什么？该问题在领域中的重要性如何？\n"
+                    "2) 现有方法存在哪些根本性缺陷或局限性？\n"
+                    "3) 论文提出的解决思路的独特性和创新性体现在哪里？\n"
+                    "4) 该研究对理论发展或实际应用的意义是什么？"
                 ),
             ),
+            
+            # 第二层：理论框架与核心贡献
             DeepReadQuestion(
-                id="method_derivation_and_theory",
-                description="方法推导与理论保障",
+                id="theoretical_framework_and_contributions",
+                description="理论框架与核心贡献",
                 importance=5,
                 question=(
-                    "请对核心方法进行公式级精读：给出关键符号定义、损失函数/目标函数，"
-                    "推导主命题（或定理/引理）的关键步骤与必要假设；若给出收敛性/复杂度/一致性结论，"
-                    "请明确其适用前提与局限。必要时给出简化版等价表述方便实现。"
+                    "【第二层：理论构建】\n"
+                    "基于前面对问题域的理解，请深入分析论文的理论框架：\n"
+                    "1) 论文建立了什么样的理论框架或数学模型？\n"
+                    "2) 核心贡献有哪些？请按理论重要性排序并说明每个贡献的独特价值\n"
+                    "3) 这些贡献如何解决第一层中识别的现有方法缺陷？\n"
+                    "4) 理论框架的适用范围和边界条件是什么？"
                 ),
             ),
+            
+            # 第三层：方法设计与技术细节
             DeepReadQuestion(
-                id="assumptions_and_threats",
-                description="关键假设与有效性威胁",
-                importance=4,
-                question=(
-                    "列出论文显式或隐含假设（数据分布、独立性、可获取性、硬件条件等），"
-                    "分析这些假设与现实差距可能带来的失效情形；"
-                    "补充作者未充分讨论但可能重要的有效性威胁。"
-                ),
-            ),
-            DeepReadQuestion(
-                id="experiments_reproduction_plan",
-                description="实验设计与可重复性要点（不含代码）",
+                id="method_design_and_technical_details",
+                description="方法设计与技术细节",
                 importance=5,
                 question=(
-                    "请总结实验设计与可重复性关键要点（不涉及任何代码/命令）：数据集版本与获取方式、预处理流程、"
-                    "核心超参数名称（无需给出具体数值）、训练与评测流程概述、对比方法与消融实验设计、"
-                    "资源需求量级（如GPU/CPU/时长）。"
+                    "【第三层：技术实现】\n"
+                    "基于前面的理论框架，请深入分析具体的技术实现：\n"
+                    "1) 核心算法的设计思路和关键步骤是什么？\n"
+                    "2) 关键符号定义、损失函数/目标函数、以及主要定理/引理的推导过程\n"
+                    "3) 算法的时间复杂度、空间复杂度以及收敛性分析\n"
+                    "4) 实现中的关键技术难点和解决方案\n"
+                    "5) 与现有方法在技术层面的本质区别是什么？"
                 ),
             ),
+            
+            # 第四层：实验验证与有效性分析
             DeepReadQuestion(
-                id="dataset_and_license",
-                description="数据集与许可",
-                importance=3,
+                id="experimental_validation_and_effectiveness",
+                description="实验验证与有效性分析",
+                importance=5,
                 question=(
-                    "请罗列论文用到的数据/模型资源及其许可证；说明是否存在闭源依赖或不可获得资源，"
-                    "并提供相应替代方案建议。"
+                    "【第四层：实验验证】\n"
+                    "基于前面的技术设计，请分析实验如何验证方法的有效性：\n"
+                    "1) 实验设计如何验证前面提出的理论贡献？\n"
+                    "2) 数据集选择、评估指标和对比方法的合理性分析\n"
+                    "3) 主要实验结果是否支持论文的核心主张？\n"
+                    "4) 消融实验揭示了哪些关键因素和交互效应？\n"
+                    "5) 实验结果的统计显著性和可重复性如何？"
                 ),
             ),
+            
+            # 第五层：假设条件与局限性分析
             DeepReadQuestion(
-                id="results_and_ablations",
-                description="结果复核与消融洞察",
+                id="assumptions_limitations_and_threats",
+                description="假设条件与局限性分析",
                 importance=4,
                 question=(
-                    "请对主要结果进行要点复核：是否满足统计显著性、是否有方差报告；"
-                    "从消融实验中提炼最关键的影响因素与交互效应，指出可能的误导性结论。"
+                    "【第五层：批判性分析】\n"
+                    "基于前面的全面分析，请进行批判性思考：\n"
+                    "1) 论文的显式和隐式假设有哪些？这些假设的合理性如何？\n"
+                    "2) 在什么条件下方法可能失效？现实应用中的潜在风险是什么？\n"
+                    "3) 实验设计的局限性和可能的误导性结论\n"
+                    "4) 作者未充分讨论但可能影响方法有效性的因素\n"
+                    "5) 方法的可扩展性和泛化能力如何？"
                 ),
             ),
+            
+            # 第六层：复现指南与工程实现
             DeepReadQuestion(
-                id="limitations_future_and_impact",
-                description="限制、未来方向与影响",
-                importance=3,
+                id="reproduction_guide_and_engineering",
+                description="复现指南与工程实现",
+                importance=5,
                 question=(
-                    "总结论文的主要局限、潜在风险或伦理问题；提出可操作的改进方向与后续研究假设；"
-                    "评估其对学术与产业的中短期影响路径。"
+                    "【第六层：工程复现】\n"
+                    "基于前面的技术分析，请提供复现指导：\n"
+                    "1) 复现所需的数据集、预训练模型和依赖资源\n"
+                    "2) 关键超参数及其调优策略（不涉及具体数值）\n"
+                    "3) 训练和评估流程的关键步骤\n"
+                    "4) 硬件资源需求（GPU/CPU/内存/存储）和时间成本估算\n"
+                    "5) 可能遇到的实现难点和解决方案\n"
+                    "6) 开源代码的可用性和许可证情况"
                 ),
             ),
+            
+            # 第七层：流程图与架构设计
             DeepReadQuestion(
-                id="mermaid_flowcharts",
-                description="核心流程图（Mermaid）",
+                id="flowcharts_and_architecture",
+                description="流程图与架构设计",
                 importance=4,
                 question=(
-                    "请给出与实现强相关的流程图（可多个模块）\n"
+                    "【第七层：架构可视化】\n"
+                    "基于前面的技术分析，请绘制核心流程图：\n"
                     "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
-                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
-                    "4) 仅聚焦核心逻辑，避免过度细节；\n"
-                    "5) 若只有单一核心流程，仅输出一个流程图；\n"
-                    "6) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
-                    "   - 根据逻辑选择 flowchart LR（从左到右）或 flowchart TD（从上到下）。\n"
-                    "7) 示例：\n"
-                    "```mermaid\n"
-                    "flowchart TD\n"
-                    "    A[\"输入\"] --> B(\"处理\")\n"
-                    "    B --> C{\"是否满足条件\"}\n"
-                    "    C --> D[\"输出1\"]\n"
-                    "    C --> |\"否\"| E[\"输出2\"]\n"
-                    "```"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
+                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称\n"
+                    "4) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式\n"
+                    "5) 重点展示：整体架构、核心算法流程、数据流向、关键决策点"
                 ),
             ),
+            
+            # 第八层：影响评估与未来展望
             DeepReadQuestion(
-                id="exec_summary_md",
-                description="精读要点摘要（Markdown）",
+                id="impact_assessment_and_future_directions",
+                description="影响评估与未来展望",
+                importance=3,
+                question=(
+                    "【第八层：影响与展望】\n"
+                    "基于前面的全面分析，请评估研究的影响和前景：\n"
+                    "1) 该研究对学术领域的短期和长期影响\n"
+                    "2) 潜在的产业应用价值和商业化前景\n"
+                    "3) 可能引发的后续研究方向\n"
+                    "4) 存在的伦理问题或社会影响\n"
+                    "5) 改进和扩展的具体建议"
+                ),
+            ),
+            
+            # 第九层：执行摘要与要点总结
+            DeepReadQuestion(
+                id="executive_summary_and_key_points",
+                description="执行摘要与要点总结",
                 importance=5,
                 question=(
-                    "给出极简 Markdown 摘要（不包含任何代码/命令）：\n"
-                    "- 一句话总述方法与作用\n"
-                    "- 三到五条方法要点（输入/步骤/输出）\n"
-                    "- 三到五条复现要点（数据/超参名称/资源量级/时长）"
+                    "【第九层：要点总结】\n"
+                    "基于前面八层的深入分析，请给出精炼的执行摘要：\n"
+                    "格式要求（Markdown，不包含代码）：\n"
+                    "## 核心价值\n"
+                    "- 一句话概括方法的核心价值\n"
+                    "\n"
+                    "## 技术要点\n"
+                    "- 3-5条关键技术要点（输入/处理/输出）\n"
+                    "\n"
+                    "## 复现要点\n"
+                    "- 3-5条复现关键信息（数据/参数/资源/时间）\n"
+                    "\n"
+                    "## 适用场景\n"
+                    "- 2-3条典型应用场景\n"
+                    "\n"
+                    "## 注意事项\n"
+                    "- 2-3条重要限制或注意事项"
                 ),
             ),
         ]
@@ -207,6 +259,29 @@ class BatchPaperDetailAnalyzer:
         self._save_keywords_db(db)
         return canonical_list, db
 
+    def _clean_yaml_list(self, yaml_text: str, list_fields: List[str]) -> str:
+        """清理YAML文本中列表字段的None值"""
+        import re
+        for field in list_fields:
+            # 匹配列表字段的模式
+            pattern = rf"^{field}:\s*\[(.*?)\]\s*$"
+            match = re.search(pattern, yaml_text, flags=re.MULTILINE)
+            if match:
+                inner_content = match.group(1).strip()
+                if inner_content:
+                    # 解析列表内容，过滤掉None值
+                    items = [item.strip().strip('"\'') for item in inner_content.split(',')]
+                    # 过滤掉None、空字符串和"None"
+                    filtered_items = [item for item in items if item and item.lower() != 'none']
+                    if filtered_items:
+                        # 重新构建列表，保持引号格式
+                        rebuilt = ', '.join([f'"{item}"' for item in filtered_items])
+                        yaml_text = re.sub(pattern, f"{field}: [{rebuilt}]", yaml_text, flags=re.MULTILINE)
+                    else:
+                        # 如果列表为空，移除该字段
+                        yaml_text = re.sub(rf"^{field}:\s*\[.*?\]\s*$\n?", "", yaml_text, flags=re.MULTILINE)
+        return yaml_text
+
     def _generate_yaml_header(self) -> Generator:
         """基于论文内容与已得分析，生成 YAML Front Matter"""
         try:
@@ -265,36 +340,50 @@ class BatchPaperDetailAnalyzer:
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
                     pass
-                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失回退默认
+                # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失回退默认
                 try:
                     level = None
+                    reading_recommendation = None
                     try:
                         judge = self.results.get("worth_reading_judgment", "")
                         if isinstance(judge, str) and judge:
                             if "强烈推荐" in judge:
                                 level = "强烈推荐"
+                                reading_recommendation = "强烈推荐精读"
                             elif "不推荐" in judge:
                                 level = "不推荐"
+                                reading_recommendation = "不推荐精读"
                             elif "谨慎" in judge:
                                 level = "谨慎"
+                                reading_recommendation = "谨慎精读"
                             elif "一般" in judge:
                                 level = "一般"
+                                reading_recommendation = "一般"
                             elif "推荐" in judge:
                                 level = "推荐"
+                                reading_recommendation = "推荐精读"
                     except Exception:
                         pass
                     if not level:
                         level = "一般"
+                    if not reading_recommendation:
+                        # 兜底：根据重要程度推断是否精读
+                        if level in ["强烈推荐", "推荐"]:
+                            reading_recommendation = "推荐精读"
+                        elif level == "不推荐":
+                            reading_recommendation = "不推荐精读"
+                        else:
+                            reading_recommendation = "一般"
+                    
                     if text.endswith("---"):
-                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
                 except Exception:
                     pass
-                # 追加是否精读（默认未精读）
-                try:
-                    if text.endswith("---"):
-                        text = text[:-3].rstrip() + f"\n是否精读: \"未精读\"\n---"
-                except Exception:
-                    pass
+                
+                # 清理列表字段中的None值
+                list_fields = ["urls", "doi", "journal_or_conference", "year", "source_code"]
+                text = self._clean_yaml_list(text, list_fields)
+                
                 return text
             return None
         except Exception as e:
@@ -327,12 +416,26 @@ class BatchPaperDetailAnalyzer:
 
     def _ask(self, q: DeepReadQuestion) -> Generator:
         try:
-            prompt = (
-                "请基于已记住的论文全文进行精读分析，并严格围绕问题作答。\n"
+            # 构建递进式分析的上下文
+            context_parts = [
+                "请基于已记住的论文全文进行递进式精读分析，并严格围绕问题作答。\n"
                 "注意：请避免提供任何代码、伪代码、命令行或具体实现细节；"
-                "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n\n"
-                f"问题：{q.question}"
-            )
+                "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n"
+            ]
+            
+            # 添加前面分析的结果作为上下文
+            if self.results:
+                context_parts.append("\n【前面分析的关键发现】")
+                for prev_q in self.questions:
+                    if prev_q.id in self.results and prev_q.id != q.id:
+                        # 只添加前面已分析的问题结果
+                        if any(prev_q.id == existing_id for existing_id in self.results.keys()):
+                            context_parts.append(f"\n{prev_q.description}：{self.results[prev_q.id][:300]}...")
+            
+            context_parts.append(f"\n\n【当前分析任务】\n{q.question}")
+            
+            prompt = "".join(context_parts)
+            
             resp = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,
                 inputs_show_user=q.question,
@@ -340,8 +443,10 @@ class BatchPaperDetailAnalyzer:
                 chatbot=self.chatbot,
                 history=self.context_history or [],
                 sys_prompt=(
-                    "你是资深研究员，输出以概念与方法论层面为主，不包含任何代码或伪代码。"
+                    "你是资深研究员，进行递进式深度分析。每个问题都基于前面的分析结果进行深入。"
+                    "输出以概念与方法论层面为主，不包含任何代码或伪代码。"
                     "如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。"
+                    "注意保持分析的连贯性和递进性。"
                 ),
             )
             if resp:
@@ -360,26 +465,46 @@ class BatchPaperDetailAnalyzer:
             return False
 
     def _generate_report(self) -> Generator:
-        self.chatbot.append(["生成报告", "正在整合精读结果，生成深度技术报告..."])
+        self.chatbot.append(["生成报告", "正在整合递进式精读结果，生成深度技术报告..."])
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
         prompt = (
-            "请将以下精读分析整理为完整的技术报告，层次清晰，突出核心思想与实验设计要点，"
-            "不包含任何代码/伪代码/命令行。若包含```mermaid 代码块，请原样保留。"
+            "请将以下递进式精读分析整理为完整的技术报告。"
+            "报告应体现分析的递进逻辑：从问题域理解→理论构建→技术实现→实验验证→批判分析→工程复现→架构可视化→影响评估→要点总结。"
+            "层次清晰，突出核心思想与实验设计要点，不包含任何代码/伪代码/命令行。"
+            "若包含```mermaid 代码块，请原样保留。\n\n"
+            "【递进式分析结果】"
         )
-        for q in self.questions:
-            if q.id in self.results:
-                prompt += f"\n\n[{q.description}]\n{self.results[q.id]}"
+        
+        # 按照递进顺序组织分析结果
+        layer_order = [
+            "problem_domain_and_motivation",
+            "theoretical_framework_and_contributions", 
+            "method_design_and_technical_details",
+            "experimental_validation_and_effectiveness",
+            "assumptions_limitations_and_threats",
+            "reproduction_guide_and_engineering",
+            "flowcharts_and_architecture",
+            "impact_assessment_and_future_directions",
+            "executive_summary_and_key_points"
+        ]
+        
+        for layer_id in layer_order:
+            for q in self.questions:
+                if q.id == layer_id and q.id in self.results:
+                    prompt += f"\n\n## {q.description}\n{self.results[q.id]}"
+                    break
 
         resp = yield from request_gpt_model_in_new_thread_with_ui_alive(
             inputs=prompt,
-            inputs_show_user="生成论文精读技术报告",
+            inputs_show_user="生成递进式论文精读技术报告",
             llm_kwargs=self.llm_kwargs,
             chatbot=self.chatbot,
             history=[],
             sys_prompt=(
-                "以工程复现为目标组织报告：背景极简，方法与实现细节充分，"
-                "条理分明，包含必要的清单与步骤。"
+                "以递进式深度分析为主线组织报告：体现从宏观到微观、从理论到实践的完整分析链条。"
+                "每个部分都要与前面的分析形成逻辑关联，突出递进关系。"
+                "以工程复现为目标，背景极简，方法与实现细节充分，条理分明，包含必要的清单与步骤。"
             ),
         )
         return resp or "报告生成失败"
@@ -412,13 +537,13 @@ class BatchPaperDetailAnalyzer:
         parts: List[str] = []
         parts.append(f"论文精读技术报告\n\n{report}")
         # 优先追加执行级摘要与流程图
-        if "exec_summary_md" in self.results:
-            parts.append(f"\n\n## 执行级摘要\n\n{self.results['exec_summary_md']}")
-        if "mermaid_flowcharts" in self.results:
-            parts.append(f"\n\n## 核心流程图\n\n{self.results['mermaid_flowcharts']}")
+        if "executive_summary_and_key_points" in self.results:
+            parts.append(f"\n\n## 执行级摘要\n\n{self.results['executive_summary_and_key_points']}")
+        if "flowcharts_and_architecture" in self.results:
+            parts.append(f"\n\n## 核心流程图\n\n{self.results['flowcharts_and_architecture']}")
         # 追加其余维度
         for q in self.questions:
-            if q.id in self.results and q.id not in {"exec_summary_md", "mermaid_flowcharts"}:
+            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "flowcharts_and_architecture"}:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
         # 追加 Token 估算结果

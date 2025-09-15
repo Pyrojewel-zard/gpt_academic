@@ -19,7 +19,7 @@ class DeepReadQuestion:
     question: str
     importance: int
     description: str
-    domain: str  # 适用领域 ("general", "ic", "both")
+    domain: str  # 适用领域 ("general", "rf_ic", "both")
 
 
 class BatchPaperDetailAnalyzer:
@@ -40,6 +40,13 @@ class BatchPaperDetailAnalyzer:
         # 统计用：记录每次LLM交互的输入与输出
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
+        # Token管理相关
+        self._max_context_tokens = 15000  # 最大上下文token数
+        self._token_usage_stats = {
+            'total_input_tokens': 0,
+            'total_output_tokens': 0,
+            'interaction_count': 0
+        }
 
         # 精读维度（递进式深入分析，支持领域自适应）
         self.questions: List[DeepReadQuestion] = [
@@ -209,51 +216,51 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             
-            # IC专用问题
-            # IC第一层：电路架构与系统设计
+            # RF IC专用问题
+            # RF IC第一层：电路架构与系统设计
             DeepReadQuestion(
-                id="ic_circuit_architecture_and_system",
-                description="IC电路架构与系统设计",
+                id="rf_ic_circuit_architecture_and_system",
+                description="RF IC电路架构与系统设计",
                 importance=5,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第一层：电路架构分析】\n"
-                    "基于前面的问题域理解，请深入分析IC论文的电路架构：\n"
-                    "1) 核心电路模块的架构设计（如CPU、GPU、AI加速器、射频前端等）\n"
+                    "【RF IC第一层：电路架构分析】\n"
+                    "基于前面的问题域理解，请深入分析RF IC论文的电路架构：\n"
+                    "1) 核心电路模块的架构设计（如LNA、PA、混频器、VCO、PLL等射频前端电路）\n"
                     "2) 系统级集成方案和模块间接口设计\n"
                     "3) 电路拓扑结构的特点、优势和创新点\n"
                     "4) 整体芯片的层次化设计思路和关键设计决策\n"
-                    "5) 与现有IC架构的本质区别和技术突破"
+                    "5) 与现有RF IC架构的本质区别和技术突破"
                 ),
             ),
             
-            # IC第二层：工艺技术与器件设计
+            # RF IC第二层：工艺技术与器件设计
             DeepReadQuestion(
-                id="ic_process_technology_and_devices",
+                id="rf_ic_process_technology_and_devices",
                 description="工艺技术与器件设计",
                 importance=5,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第二层：工艺与器件】\n"
+                    "【RF IC第二层：工艺与器件】\n"
                     "基于前面的架构分析，请深入分析工艺技术选择：\n"
-                    "1) 采用的半导体工艺技术（CMOS、FinFET、GAA、3D IC等）\n"
+                    "1) 采用的半导体工艺技术（CMOS、SiGe、GaAs、SOI等射频工艺）\n"
                     "2) 关键器件的设计原理和性能优化策略\n"
-                    "3) 工艺参数对电路性能的影响分析\n"
-                    "4) 先进工艺技术的应用和挑战\n"
+                    "3) 工艺参数对射频电路性能的影响分析\n"
+                    "4) 先进射频工艺技术的应用和挑战\n"
                     "5) 工艺-器件-电路协同设计的创新点"
                 ),
             ),
             
-            # IC第三层：性能指标与设计约束
+            # RF IC第三层：性能指标与设计约束
             DeepReadQuestion(
-                id="ic_performance_metrics_and_constraints",
+                id="rf_ic_performance_metrics_and_constraints",
                 description="性能指标与设计约束",
                 importance=5,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第三层：性能与约束】\n"
-                    "基于前面的技术设计，请分析IC的关键性能指标：\n"
-                    "1) 核心性能指标（频率、功耗、面积、延迟、吞吐量等）\n"
+                    "【RF IC第三层：性能与约束】\n"
+                    "基于前面的技术设计，请分析RF IC的关键性能指标：\n"
+                    "1) 核心性能指标（频率、带宽、增益、噪声系数、线性度、效率等）\n"
                     "2) 设计约束条件（功耗预算、面积限制、成本控制等）\n"
                     "3) 性能-功耗-面积(PPA)的权衡策略\n"
                     "4) 关键路径分析和性能瓶颈识别\n"
@@ -261,50 +268,50 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             
-            # IC第四层：设计方法与EDA工具
+            # RF IC第四层：设计方法与EDA工具
             DeepReadQuestion(
-                id="ic_design_methodology_and_eda",
+                id="rf_ic_design_methodology_and_eda",
                 description="设计方法与EDA工具",
                 importance=4,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第四层：设计方法学】\n"
+                    "【RF IC第四层：设计方法学】\n"
                     "基于前面的性能分析，请分析设计方法学：\n"
                     "1) 采用的设计流程和方法学创新\n"
-                    "2) EDA工具链的选择和使用策略\n"
+                    "2) RF EDA工具链的选择和使用策略\n"
                     "3) 自动化设计技术和AI辅助设计方法\n"
-                    "4) 版图设计、布局布线和时序优化技术\n"
+                    "4) 版图设计、布局布线和射频优化技术\n"
                     "5) 设计验证和测试策略"
                 ),
             ),
             
-            # IC第五层：制造与测试
+            # RF IC第五层：制造与测试
             DeepReadQuestion(
-                id="ic_manufacturing_and_testing",
+                id="rf_ic_manufacturing_and_testing",
                 description="制造与测试",
                 importance=4,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第五层：制造与测试】\n"
+                    "【RF IC第五层：制造与测试】\n"
                     "基于前面的设计分析，请分析制造和测试：\n"
                     "1) 制造工艺的可行性和良率分析\n"
-                    "2) 测试策略和测试覆盖率设计\n"
+                    "2) 射频测试策略和测试覆盖率设计\n"
                     "3) 封装技术和系统级集成方案\n"
                     "4) 可靠性分析和寿命评估\n"
                     "5) 量产可行性和成本分析"
                 ),
             ),
             
-            # IC第六层：应用场景与市场定位
+            # RF IC第六层：应用场景与市场定位
             DeepReadQuestion(
-                id="ic_applications_and_market",
+                id="rf_ic_applications_and_market",
                 description="应用场景与市场定位",
                 importance=3,
-                domain="ic",
+                domain="rf_ic",
                 question=(
-                    "【IC第六层：应用与市场】\n"
+                    "【RF IC第六层：应用与市场】\n"
                     "基于前面的技术分析，请分析应用前景：\n"
-                    "1) 目标应用领域和市场定位\n"
+                    "1) 目标应用领域和市场定位（如5G、WiFi、蓝牙、卫星通信等）\n"
                     "2) 与现有解决方案的差异化优势\n"
                     "3) 技术成熟度和产业化时间表\n"
                     "4) 潜在客户和合作伙伴分析\n"
@@ -316,22 +323,21 @@ class BatchPaperDetailAnalyzer:
         self.questions.sort(key=lambda q: q.importance, reverse=True)
 
     def _classify_paper_domain(self) -> Generator:
-        """使用LLM对论文进行主题分类，判断是否为IC相关论文"""
+        """使用LLM对论文进行主题分类，判断是否为RF IC相关论文"""
         try:
-            classification_prompt = f"""请分析以下论文内容，判断其是否属于集成电路(IC)领域：
+            classification_prompt = f"""请分析以下论文内容，判断其是否属于射频集成电路(RF IC)领域：
 
 论文内容片段：
 {self.paper_content[:2000]}...
 
 请根据以下标准进行判断：
-1. 如果论文涉及集成电路设计（CPU、GPU、AI芯片、存储器、射频IC等）
-2. 如果论文涉及半导体工艺技术、器件物理、版图设计
-3. 如果论文涉及EDA工具、设计自动化、验证测试
-4. 如果论文涉及芯片架构、系统级芯片(SoC)、3D IC
-5. 如果论文涉及IC性能指标（功耗、面积、延迟、频率等）
-6. 如果论文涉及使用ML或者一系列EDA工具，涉及人工智能，那么就是GENERAL，即所有AI+IC也是GENERAL
+1. 如果论文涉及射频前端电路（LNA、PA、混频器、VCO、PLL等）
+2. 如果论文涉及无线通信系统集成、毫米波技术、太赫兹技术
+3. 如果论文涉及射频电路设计、半导体工艺在射频应用
+4. 如果论文涉及射频性能指标（噪声系数、线性度、效率等）
+5. 如果论文涉及到使用ML或者一系列EDA工具，涉及人工智能，那么就是GENERAL，即所有AI+RFIC也是GENERAL
 
-请只回答："IC" 或 "GENERAL"，不要其他内容。"""
+请只回答："RF_IC" 或 "GENERAL"，不要其他内容。"""
 
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=classification_prompt,
@@ -344,9 +350,9 @@ class BatchPaperDetailAnalyzer:
 
             if response and isinstance(response, str):
                 response = response.strip().upper()
-                if "IC" in response:
-                    self.paper_domain = "ic"
-                    self.chatbot.append(["主题分类", "检测到IC相关论文，将使用专业IC精读分析策略"])
+                if "RF_IC" in response:
+                    self.paper_domain = "rf_ic"
+                    self.chatbot.append(["主题分类", "检测到RF IC相关论文，将使用专业RF IC精读分析策略"])
                 else:
                     self.paper_domain = "general"
                     self.chatbot.append(["主题分类", "检测到通用论文，将使用通用精读分析策略"])
@@ -365,19 +371,150 @@ class BatchPaperDetailAnalyzer:
 
     def _get_domain_specific_questions(self) -> List[DeepReadQuestion]:
         """根据论文领域获取相应的问题列表"""
-        if self.paper_domain == "ic":
-            # IC论文：包含通用问题 + IC专用问题
-            return [q for q in self.questions if q.domain in ["both", "ic"]]
+        if self.paper_domain == "rf_ic":
+            # RF IC论文：包含通用问题 + RF IC专用问题
+            return [q for q in self.questions if q.domain in ["both", "rf_ic"]]
         else:
             # 通用论文：只包含通用问题
             return [q for q in self.questions if q.domain in ["both", "general"]]
 
     def _get_domain_specific_system_prompt(self) -> str:
         """根据论文领域获取相应的系统提示"""
-        if self.paper_domain == "ic":
-            return """你是一个专业的集成电路(IC)分析专家，具有深厚的电路设计、半导体工艺和芯片架构知识。请从IC专业角度深入分析论文，使用准确的术语，提供有见地的技术评估。"""
+        if self.paper_domain == "rf_ic":
+            return """你是一个专业的射频集成电路(RF IC)分析专家，具有深厚的电路设计、半导体工艺和无线通信系统知识。请从RF IC专业角度深入分析论文，使用准确的术语，提供有见地的技术评估。"""
         else:
             return """你是一个专业的科研论文分析助手，进行递进式深度分析。每个问题都基于前面的分析结果进行深入。输出以概念与方法论层面为主，不包含任何代码或伪代码。如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。注意保持分析的连贯性和递进性。"""
+
+    def _estimate_tokens(self, text: str) -> int:
+        """估算文本的token数量（粗略估算：1 token ≈ 4 字符）"""
+        if not text:
+            return 0
+        return len(text) // 4
+
+
+    def _build_progressive_context(self, current_q: DeepReadQuestion) -> List[str]:
+        """构建递进式分析的上下文，智能引用前面的分析结果"""
+        context_parts = []
+        
+        if not self.results:
+            return context_parts
+        
+        # 定义问题的重要性和依赖关系
+        question_importance = {
+            "problem_domain_and_motivation": 5,
+            "theoretical_framework_and_contributions": 5,
+            "method_design_and_technical_details": 5,
+            "experimental_validation_and_effectiveness": 4,
+            "assumptions_limitations_and_threats": 3,
+            "reproduction_guide_and_engineering": 4,
+            "flowcharts_and_architecture": 3,
+            "impact_assessment_and_future_directions": 2,
+            "executive_summary_and_key_points": 5
+        }
+        
+        # 根据当前问题的重要性，智能选择引用的前面分析
+        current_importance = question_importance.get(current_q.id, 3)
+        
+        # 收集前面分析的关键发现
+        key_findings = []
+        for prev_q in self.questions:
+            if prev_q.id in self.results and prev_q.id != current_q.id:
+                prev_importance = question_importance.get(prev_q.id, 3)
+                # 只引用重要性较高或与当前问题相关的前面分析
+                if prev_importance >= current_importance or self._is_related_analysis(prev_q.id, current_q.id):
+                    key_findings.append((prev_q.description, self.results[prev_q.id]))
+        
+        if key_findings:
+            context_parts.append("\n【前面分析的关键发现】")
+            
+            # 根据当前问题类型，智能组织前面分析的结果
+            if current_q.id in ["theoretical_framework_and_contributions", "method_design_and_technical_details"]:
+                # 理论和方法问题，重点引用问题域分析
+                for desc, result in key_findings:
+                    if "问题域" in desc or "动机" in desc:
+                        context_parts.append(f"\n{desc}：{result[:400]}...")
+            elif current_q.id in ["experimental_validation_and_effectiveness"]:
+                # 实验验证问题，重点引用理论和方法分析
+                for desc, result in key_findings:
+                    if any(keyword in desc for keyword in ["理论", "方法", "技术", "算法"]):
+                        context_parts.append(f"\n{desc}：{result[:400]}...")
+            elif current_q.id in ["assumptions_limitations_and_threats"]:
+                # 批判分析问题，引用所有前面的分析
+                for desc, result in key_findings:
+                    context_parts.append(f"\n{desc}：{result[:300]}...")
+            else:
+                # 其他问题，引用最重要的前面分析
+                for desc, result in key_findings[:3]:  # 最多引用3个
+                    context_parts.append(f"\n{desc}：{result[:300]}...")
+        
+        return context_parts
+
+    def _is_related_analysis(self, prev_id: str, current_id: str) -> bool:
+        """判断两个分析问题是否相关"""
+        # 定义问题间的依赖关系
+        dependencies = {
+            "theoretical_framework_and_contributions": ["problem_domain_and_motivation"],
+            "method_design_and_technical_details": ["problem_domain_and_motivation", "theoretical_framework_and_contributions"],
+            "experimental_validation_and_effectiveness": ["theoretical_framework_and_contributions", "method_design_and_technical_details"],
+            "assumptions_limitations_and_threats": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
+            "reproduction_guide_and_engineering": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
+            "flowcharts_and_architecture": ["method_design_and_technical_details"],
+            "impact_assessment_and_future_directions": ["assumptions_limitations_and_threats"],
+            "executive_summary_and_key_points": ["theoretical_framework_and_contributions", "method_design_and_technical_details", "experimental_validation_and_effectiveness"]
+        }
+        
+        return prev_id in dependencies.get(current_id, [])
+
+    def _update_token_stats(self, input_text: str, output_text: str):
+        """更新token使用统计"""
+        try:
+            input_tokens = self._estimate_tokens(input_text)
+            output_tokens = self._estimate_tokens(output_text)
+            
+            self._token_usage_stats['total_input_tokens'] += input_tokens
+            self._token_usage_stats['total_output_tokens'] += output_tokens
+            self._token_usage_stats['interaction_count'] += 1
+            
+            # 如果单次交互的token数过多，给出警告
+            total_tokens = input_tokens + output_tokens
+            if total_tokens > 2000:  # 单次交互超过2000 tokens
+                self.chatbot.append(["Token警告", f"本次交互使用了 {total_tokens} tokens，建议检查输入长度"])
+                
+        except Exception:
+            pass
+
+    def _get_token_usage_summary(self) -> str:
+        """获取token使用摘要"""
+        try:
+            stats = self._token_usage_stats
+            total_tokens = stats['total_input_tokens'] + stats['total_output_tokens']
+            avg_tokens = total_tokens / max(stats['interaction_count'], 1)
+            
+            summary = f"""
+## Token 使用统计
+- 总交互次数: {stats['interaction_count']}
+- 总输入 tokens: {stats['total_input_tokens']}
+- 总输出 tokens: {stats['total_output_tokens']}
+- 总 tokens: {total_tokens}
+- 平均每次交互: {avg_tokens:.1f} tokens
+"""
+            return summary
+        except Exception:
+            return "Token统计信息获取失败"
+
+    def _check_token_limits(self, input_text: str) -> bool:
+        """检查是否接近token限制"""
+        try:
+            current_tokens = self._estimate_tokens(input_text)
+            context_tokens = sum(self._estimate_tokens(text) for text in self.context_history)
+            total_estimated = current_tokens + context_tokens
+            
+            if total_estimated > self._max_context_tokens * 0.9:  # 接近90%限制
+                self.chatbot.append(["Token警告", f"预计将使用 {total_estimated} tokens，接近限制 {self._max_context_tokens}"])
+                return True
+            return False
+        except Exception:
+            return False
 
     # ---------- 关键词库工具（与速读版一致） ----------
     def _get_keywords_db_path(self) -> str:
@@ -602,18 +739,15 @@ class BatchPaperDetailAnalyzer:
                 "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n"
             ]
             
-            # 添加前面分析的结果作为上下文
-            if self.results:
-                context_parts.append("\n【前面分析的关键发现】")
-                for prev_q in self.questions:
-                    if prev_q.id in self.results and prev_q.id != q.id:
-                        # 只添加前面已分析的问题结果
-                        if any(prev_q.id == existing_id for existing_id in self.results.keys()):
-                            context_parts.append(f"\n{prev_q.description}：{self.results[prev_q.id][:300]}...")
+            # 智能构建递进式上下文
+            context_parts.extend(self._build_progressive_context(q))
             
             context_parts.append(f"\n\n【当前分析任务】\n{q.question}")
             
             prompt = "".join(context_parts)
+            
+            # 检查token限制
+            self._check_token_limits(prompt)
             
             # 获取领域特定的系统提示
             sys_prompt = self._get_domain_specific_system_prompt()
@@ -628,6 +762,12 @@ class BatchPaperDetailAnalyzer:
             )
             if resp:
                 self.results[q.id] = resp
+                # 将问答对累积到历史记录中，实现上下文连贯性
+                self.context_history.extend([prompt, resp])
+                
+                # 更新token统计
+                self._update_token_stats(prompt, resp)
+                
                 # 记录本轮交互的输入与输出用于token估算
                 try:
                     self._token_inputs.append(prompt)
@@ -642,18 +782,18 @@ class BatchPaperDetailAnalyzer:
             return False
 
     def _generate_report(self) -> Generator:
-        domain_label = "IC专业" if self.paper_domain == "ic" else "通用"
+        domain_label = "RF IC专业" if self.paper_domain == "rf_ic" else "通用"
         self.chatbot.append(["生成报告", f"正在整合{domain_label}递进式精读结果，生成深度技术报告..."])
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
-        if self.paper_domain == "ic":
+        if self.paper_domain == "rf_ic":
             prompt = (
-                "请将以下对IC论文的递进式精读分析整理为完整的技术报告。"
-                "报告应体现IC专业分析的递进逻辑：从问题域理解→理论构建→技术实现→实验验证→批判分析→工程复现→架构可视化→影响评估→要点总结。"
-                "同时包含IC专业分析：电路架构→工艺技术→性能指标→设计方法→制造测试→应用市场。"
-                "层次清晰，突出IC设计的技术深度和工程价值，不包含任何代码/伪代码/命令行。"
+                "请将以下对RF IC论文的递进式精读分析整理为完整的技术报告。"
+                "报告应体现RF IC专业分析的递进逻辑：从问题域理解→理论构建→技术实现→实验验证→批判分析→工程复现→架构可视化→影响评估→要点总结。"
+                "同时包含RF IC专业分析：电路架构→工艺技术→性能指标→设计方法→制造测试→应用市场。"
+                "层次清晰，突出RF IC设计的技术深度和工程价值，不包含任何代码/伪代码/命令行。"
                 "若包含```mermaid 代码块，请原样保留。\n\n"
-                "【递进式IC分析结果】"
+                "【递进式RF IC分析结果】"
             )
         else:
             prompt = (
@@ -677,17 +817,17 @@ class BatchPaperDetailAnalyzer:
             "executive_summary_and_key_points"
         ]
         
-        # 如果是IC论文，添加IC专用问题
-        if self.paper_domain == "ic":
-            ic_layer_order = [
-                "ic_circuit_architecture_and_system",
-                "ic_process_technology_and_devices",
-                "ic_performance_metrics_and_constraints",
-                "ic_design_methodology_and_eda",
-                "ic_manufacturing_and_testing",
-                "ic_applications_and_market"
+        # 如果是RF IC论文，添加RF IC专用问题
+        if self.paper_domain == "rf_ic":
+            rf_ic_layer_order = [
+                "rf_ic_circuit_architecture_and_system",
+                "rf_ic_process_technology_and_devices",
+                "rf_ic_performance_metrics_and_constraints",
+                "rf_ic_design_methodology_and_eda",
+                "rf_ic_manufacturing_and_testing",
+                "rf_ic_applications_and_market"
             ]
-            layer_order.extend(ic_layer_order)
+            layer_order.extend(rf_ic_layer_order)
         
         for layer_id in layer_order:
             for q in self.questions:
@@ -695,11 +835,11 @@ class BatchPaperDetailAnalyzer:
                     prompt += f"\n\n## {q.description}\n{self.results[q.id]}"
                     break
 
-        if self.paper_domain == "ic":
+        if self.paper_domain == "rf_ic":
             sys_prompt = (
-                "以递进式IC深度分析为主线组织报告：体现从宏观到微观、从理论到实践的完整分析链条，"
-                "同时突出IC专业特色。每个部分都要与前面的分析形成逻辑关联，突出递进关系。"
-                "以IC工程实现为目标，背景极简，方法与实现细节充分，条理分明，包含必要的清单与步骤。"
+                "以递进式RF IC深度分析为主线组织报告：体现从宏观到微观、从理论到实践的完整分析链条，"
+                "同时突出RF IC专业特色。每个部分都要与前面的分析形成逻辑关联，突出递进关系。"
+                "以RF IC工程实现为目标，背景极简，方法与实现细节充分，条理分明，包含必要的清单与步骤。"
                 "强调技术深度、工程价值和产业化前景。"
             )
         else:
@@ -737,7 +877,7 @@ class BatchPaperDetailAnalyzer:
 
     def save_report(self, report: str) -> str:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        domain_prefix = "IC" if self.paper_domain == "ic" else "通用"
+        domain_prefix = "RF_IC" if self.paper_domain == "rf_ic" else "通用"
         pdf_basename = f"未知{domain_prefix}论文"
         if self.paper_file_path and os.path.exists(self.paper_file_path):
             pdf_basename = os.path.splitext(os.path.basename(self.paper_file_path))[0]
@@ -746,7 +886,7 @@ class BatchPaperDetailAnalyzer:
                 pdf_basename = pdf_basename[:50]
 
         parts: List[str] = []
-        domain_title = "集成电路论文专业精读报告" if self.paper_domain == "ic" else "论文精读技术报告"
+        domain_title = "射频集成电路论文专业精读报告" if self.paper_domain == "rf_ic" else "论文精读技术报告"
         parts.append(f"{domain_title}\n\n{report}")
         
         # 优先追加执行级摘要与流程图
@@ -762,11 +902,17 @@ class BatchPaperDetailAnalyzer:
 
         # 追加 Token 估算结果
         try:
+            # 使用新的token统计方法
+            token_summary = self._get_token_usage_summary()
+            if token_summary and "Token统计信息获取失败" not in token_summary:
+                parts.append(f"\n\n{token_summary}")
+            
+            # 保留原有的估算方法作为补充
             stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
             if stats and stats.get('sum_total_tokens', 0) > 0:
                 parts.append(
-                    "\n\n## Token 估算\n\n"
-                    f"- 模型: {stats.get('model')}\n\n"
+                    "\n\n## 详细Token估算\n\n"
+                    f"- 模型: {stats.get('model')}\n"
                     f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
                     f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
                     f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n"
@@ -886,10 +1032,10 @@ def 批量论文精读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
     chatbot.append([
         "函数插件功能及使用方式",
         (
-            "批量论文精读：智能识别论文主题（通用/IC），自动选择最适合的递进式精读分析策略，"
+            "批量论文精读：智能识别论文主题（通用/RF IC），自动选择最适合的递进式精读分析策略，"
             "为每篇论文生成面向实现与复现的深度技术报告。\n\n"
             "使用方式：\n1) 输入包含多个PDF的文件夹路径；\n2) 或输入多个论文ID（DOI或arXiv），用逗号分隔；\n3) 点击开始。\n\n"
-            "智能分析特性：\n- 自动主题分类（通用论文 vs IC论文）\n- 递进式深度分析（9层递进逻辑）\n- 领域特定专业问题\n- 统一的报告格式和YAML元信息\n\n"
+            "智能分析特性：\n- 自动主题分类（通用论文 vs RF IC论文）\n- 递进式深度分析（9层递进逻辑）\n- 领域特定专业问题\n- 统一的报告格式和YAML元信息\n\n"
             "注意事项：\n- 若需要输出公式，请使用 LaTeX 数学格式：行内公式用 $...$，行间公式用 $$...$$。"
         ),
     ])
@@ -954,7 +1100,7 @@ def 批量论文精读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
 
     successes: List[str] = []
     failures: List[str] = []
-    domain_stats = {"general": 0, "ic": 0}
+    domain_stats = {"general": 0, "rf_ic": 0}
 
     for i, paper_file in enumerate(paper_files):
         try:
@@ -964,7 +1110,7 @@ def 批量论文精读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
             if outfile:
                 successes.append((os.path.basename(paper_file), outfile, analyzer.paper_domain))
                 domain_stats[analyzer.paper_domain] += 1
-                domain_label = "IC" if analyzer.paper_domain == "ic" else "通用"
+                domain_label = "RF IC" if analyzer.paper_domain == "rf_ic" else "通用"
                 chatbot.append([f"完成论文 {i+1}/{len(paper_files)}", f"成功生成{domain_label}精读报告: {os.path.basename(outfile)}"])
             else:
                 failures.append(os.path.basename(paper_file))
@@ -983,12 +1129,12 @@ def 批量论文精读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
     
     summary += "🎯 主题分类统计：\n"
     summary += f"- 通用论文：{domain_stats['general']} 篇\n"
-    summary += f"- IC论文：{domain_stats['ic']} 篇\n\n"
+    summary += f"- RF IC论文：{domain_stats['rf_ic']} 篇\n\n"
     
     if successes:
         summary += "✅ 成功生成报告：\n"
         for paper_name, report_path, domain in successes:
-            domain_label = "IC" if domain == "ic" else "通用"
+            domain_label = "RF IC" if domain == "rf_ic" else "通用"
             summary += f"- {paper_name} ({domain_label}) → {os.path.basename(report_path)}\n"
     if failures:
         summary += "\n❌ 分析失败的论文：\n"
