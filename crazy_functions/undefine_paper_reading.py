@@ -86,6 +86,10 @@ class UnifiedBatchPaperAnalyzer:
         # 统计用：记录每次LLM交互的输入与输出
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
+        # 统计用：记录每篇论文处理时间
+        self._processing_started_at: Optional[datetime] = None
+        self._processing_finished_at: Optional[datetime] = None
+        self._processing_seconds: Optional[float] = None
         
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
@@ -101,31 +105,17 @@ class UnifiedBatchPaperAnalyzer:
         self.questions = [
             # 通用问题（适用于所有论文）- 完全照搬 Batch_Paper_Reading.py
             PaperQuestion(
-                id="research_and_methods",
-                question="这篇论文的主要研究问题、目标和方法是什么？请分析：1)论文的核心研究问题和研究动机；2)论文提出的关键方法、模型或理论框架；3)这些方法如何解决研究问题。",
+                id="research_methods_and_data",
+                question="请概括论文的研究问题、目标与方法数据：1) 核心研究问题与动机；2) 关键方法/模型/理论框架；3) 实验设计与数据来源；4) 评估与合理性。",
                 importance=5,
-                description="研究问题与方法",
+                description="研究问题、方法与数据（合并）",
                 domain="both"
             ),
             PaperQuestion(
-                id="findings_and_innovation",
-                question="论文的主要发现、结论及创新点是什么？请分析：1)论文的核心结果与主要发现；2)作者得出的关键结论；3)研究的创新点与对领域的贡献；4)与已有工作的区别。",
+                id="findings_innovations_and_impact",
+                question="请总结论文主要发现与创新，并评估影响：1) 核心结果与结论；2) 创新点与贡献；3) 与已有工作的区别；4) 局限性与未来方向及潜在影响。",
                 importance=4,
-                description="研究发现与创新",
-                domain="both"
-            ),
-            PaperQuestion(
-                id="methodology_and_data",
-                question="论文使用了什么研究方法和数据？请详细分析：1)研究设计与实验设置；2)数据收集方法与数据集特点；3)分析技术与评估方法；4)方法学上的合理性。",
-                importance=3,
-                description="研究方法与数据",
-                domain="both"
-            ),
-            PaperQuestion(
-                id="limitations_and_impact",
-                question="论文的局限性、未来方向及潜在影响是什么？请分析：1)研究的不足与限制因素；2)作者提出的未来研究方向；3)该研究对学术界和行业可能产生的影响；4)研究结果的适用范围与推广价值。",
-                importance=2,
-                description="局限性与影响",
+                description="发现、创新、局限与影响（合并）",
                 domain="both"
             ),
             PaperQuestion(
@@ -204,45 +194,84 @@ class UnifiedBatchPaperAnalyzer:
             
             # RF IC专用问题 - 完全照搬 batch_rf_ic_reading.py
             PaperQuestion(
-                id="circuit_architecture",
-                question="这篇RF IC论文的电路架构和拓扑结构是什么？请分析：1)核心电路架构（如LNA、PA、混频器、VCO、PLL等）；2)电路拓扑结构的特点和优势；3)关键电路模块的设计思路；4)整体系统级联和接口设计。",
+                id="rf_ic_design_and_metrics",
+                question="请从设计与指标综合分析RF IC：1) 电路架构与拓扑；2) 关键模块与设计思路；3) 工艺/版图/校准要点；4) 主要性能指标与同类对比；5) 设计约束（功耗/面积/成本）。",
                 importance=5,
-                description="电路架构与拓扑",
+                description="RF IC 设计、工艺与性能（合并）",
                 domain="rf_ic"
             ),
             PaperQuestion(
-                id="performance_metrics",
-                question="论文中RF IC的关键性能指标是什么？请详细分析：1)频率范围、带宽、增益等基本参数；2)噪声系数、线性度、效率等关键指标；3)功耗、面积、成本等设计约束；4)与现有技术的性能对比。",
+                id="rf_ic_applications_challenges_future",
+                question="请评估RF IC的应用与前景：1) 目标场景与市场定位；2) 主要技术难点与创新方案；3) 产业化成熟度与差异化；4) 未来发展趋势与改进方向。",
+                importance=4,
+                description="RF IC 应用、挑战与未来（合并）",
+                domain="rf_ic"
+            ),
+            PaperQuestion(
+                id="rf_ic_category_assignment",
+                question=(
+                    "请根据论文内容，判断其最准确的二级分类归属。\n\n"
+                    "当前分类树如下（一级 -> 二级）：\n"
+                    f"{self.category_prompt_str}\n\n"
+                    "要求：\n"
+                    "1) 若完全匹配现有二级分类，直接回答：\n"
+                    "   归属：<一级类别> -> <二级子分类>\n"
+                    "2) 若需新建二级分类，回答：\n"
+                    "   新增二级：<一级类别> -> <新子分类名>\n"
+                    "3) 若需新建一级类别，回答：\n"
+                    "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
+                    "4) 用一句话说明判断理由。"
+                ),
+                importance=1,
+                description="论文二级分类归属",
+                domain="both"
+            ),      
+
+            PaperQuestion(
+                id="rf_ic_circuit_flowcharts",
+                question=(
+                    "请基于RF IC论文内容，绘制核心电路架构或系统级设计流程图，若论文包含多个相对独立的电路模块或设计阶段，请分别给出多个流程图。\n\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键电路模块/设计步骤，包含主要信号流与关键控制/判定；\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：射频前端电路；\n"
+                    "4) 仅聚焦核心电路逻辑，避免过度细节；\n"
+                    "5) 若只有单一核心电路，仅输出一个流程图；\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
+                    "7) RF IC专用示例：\n"
+                    "```mermaid\n"
+                    "flowchart TD\n"
+                    "    A[\"射频输入\"] --> B(\"LNA\")\n"
+                    "    B --> C{\"混频器\"}\n"
+                    "    C --> D[\"中频输出\"]\n"
+                    "    C --> |\"本振信号\"| E[\"VCO\"]\n"
+                    "```"
+                ),
                 importance=5,
-                description="性能指标分析",
+                description="RF IC核心电路架构流程图（Mermaid）",
                 domain="rf_ic"
             ),
             PaperQuestion(
-                id="design_techniques",
-                question="论文采用了哪些先进的RF IC设计技术？请分析：1)工艺技术选择（CMOS、SiGe、GaAs等）；2)电路设计技巧（如噪声消除、线性化技术、效率提升等）；3)版图设计和寄生效应处理；4)测试和校准方法。",
-                importance=4,
-                description="设计技术与工艺",
-                domain="rf_ic"
-            ),
-            PaperQuestion(
-                id="applications_and_markets",
-                question="该RF IC的应用场景和市场定位是什么？请分析：1)目标应用领域（如5G、WiFi、蓝牙、卫星通信等）；2)市场定位和竞争优势；3)技术成熟度和产业化前景；4)与现有解决方案的差异化。",
-                importance=4,
-                description="应用场景与市场",
-                domain="rf_ic"
-            ),
-            PaperQuestion(
-                id="challenges_and_innovations",
-                question="论文解决了哪些RF IC设计挑战？请分析：1)主要技术难点和挑战；2)创新性解决方案；3)关键技术突破；4)对行业发展的推动作用。",
-                importance=3,
-                description="技术挑战与创新",
-                domain="rf_ic"
-            ),
-            PaperQuestion(
-                id="future_directions",
-                question="论文对未来RF IC发展的启示是什么？请分析：1)技术发展趋势预测；2)潜在改进方向；3)与其他技术的融合机会；4)对下一代RF IC设计的指导意义。",
-                importance=2,
-                description="发展趋势与启示",
+                id="rf_ic_ppt_md",
+                question=(
+                    "请生成一份用于 PPT 的'RF IC核心电路与设计思路'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括RF IC论文做了什么、为何有效。\n\n"
+                    "# 电路模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'电路要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键信号流。\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'电路要点'。\n\n"
+                    "# 关键设计摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/电路/输出/创新，不写背景。\n\n"
+                    "# 性能与效果（≤ 3 条，可省略）\n"
+                    "- 指标/应用/收益。\n\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
+                ),
+                importance=5,
+                description="PPT 用RF IC核心电路与设计思路（Markdown 极简版）",
                 domain="rf_ic"
             ),
         ]
@@ -677,7 +706,7 @@ class UnifiedBatchPaperAnalyzer:
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=[],
-                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。"
+                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。{'对于RF IC论文，特别关注电路架构、信号流和设计思路的可视化表达。' if self.paper_domain == 'rf_ic' else ''}"
             )
 
             if response:
@@ -715,14 +744,18 @@ class UnifiedBatchPaperAnalyzer:
             # 优先写入：PPT 极简摘要（若有）
             if "core_idea_ppt_md" in self.results:
                 md_parts.append(f"\n\n## PPT 摘要\n\n{self.results['core_idea_ppt_md']}")
+            elif "rf_ic_ppt_md" in self.results:
+                md_parts.append(f"\n\n## RF IC PPT 摘要\n\n{self.results['rf_ic_ppt_md']}")
 
             # 其次写入：核心流程图（Mermaid）（若有，保持代码块原样）
             if "core_algorithm_flowcharts" in self.results:
                 md_parts.append(f"\n\n## 核心流程图\n\n{self.results['core_algorithm_flowcharts']}")
+            elif "rf_ic_circuit_flowcharts" in self.results:
+                md_parts.append(f"\n\n## RF IC 核心电路流程图\n\n{self.results['rf_ic_circuit_flowcharts']}")
 
-            # 其余分析项按问题列表顺序写入，但跳过已写入的两个
+            # 其余分析项按问题列表顺序写入，但跳过已写入的四个
             for q in self.questions:
-                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
+                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts", "rf_ic_ppt_md", "rf_ic_circuit_flowcharts"}:
                     md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
             md_content = "".join(md_parts)
@@ -742,6 +775,24 @@ class UnifiedBatchPaperAnalyzer:
                         f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
                         f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n\n"
                     )
+                # 紧跟 Token 估算后，追加每篇论文处理时间
+                try:
+                    dur = getattr(self, '_processing_seconds', None)
+                    started_at = getattr(self, '_processing_started_at', None)
+                    finished_at = getattr(self, '_processing_finished_at', None)
+                    if dur is not None and dur >= 0:
+                        minutes = int(dur // 60)
+                        seconds = int(dur % 60)
+                        started_str = started_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(started_at, datetime) else 'N/A'
+                        finished_str = finished_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(finished_at, datetime) else 'N/A'
+                        md_content += (
+                            "## 处理时间\n\n"
+                            f"- 开始时间: {started_str}\n"
+                            f"- 结束时间: {finished_str}\n"
+                            f"- 总耗时: {minutes}分{seconds}秒\n\n"
+                        )
+                except Exception:
+                    pass
             except Exception:
                 pass
 
@@ -762,6 +813,11 @@ class UnifiedBatchPaperAnalyzer:
 
     def analyze_paper(self, paper_path: str) -> Generator:
         """分析单篇论文主流程"""
+        # 记录处理开始时间
+        try:
+            self._processing_started_at = datetime.now()
+        except Exception:
+            self._processing_started_at = None
         # 加载论文
         success = yield from self._load_paper(paper_path)
         if not success:
@@ -785,6 +841,14 @@ class UnifiedBatchPaperAnalyzer:
 
         # 保存报告
         saved_file = self.save_report(final_report, self.paper_file_path)
+        # 记录处理结束时间及耗时
+        try:
+            self._processing_finished_at = datetime.now()
+            if self._processing_started_at is not None and self._processing_finished_at is not None:
+                self._processing_seconds = (self._processing_finished_at - self._processing_started_at).total_seconds()
+        except Exception:
+            self._processing_finished_at = None
+            self._processing_seconds = None
         
         return saved_file
 
