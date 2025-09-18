@@ -700,6 +700,16 @@ class BatchPaperDetailAnalyzer:
                 list_fields = ["urls", "doi", "journal_or_conference", "year", "source_code"]
                 text = self._clean_yaml_list(text, list_fields)
                 
+                # 强制设置 read_status 为 未阅读（无论模型如何返回）
+                try:
+                    if re.search(r"^read_status\s*:", text, flags=re.MULTILINE):
+                        text = re.sub(r"^read_status\s*:.*$", 'read_status: "未阅读"', text, flags=re.MULTILINE)
+                    else:
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + '\n' + 'read_status: "未阅读"' + '\n---'
+                except Exception:
+                    pass
+                
                 return text
             return None
         except Exception as e:
