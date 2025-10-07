@@ -370,6 +370,15 @@ class BatchPaperAnalyzer:
                 try:
                     level = None
                     reading_recommendation = None
+                    # 映射：level <-> stars，确保二者一致
+                    level_to_stars = {
+                        "强烈推荐": "⭐⭐⭐⭐⭐",
+                        "推荐": "⭐⭐⭐⭐",
+                        "一般": "⭐⭐⭐",
+                        "谨慎": "⭐⭐",
+                        "不推荐": "⭐",
+                    }
+                    stars_to_level = {v: k for k, v in level_to_stars.items()}
                     try:
                         judge = self.results.get("worth_reading_judgment", "")
                         if isinstance(judge, str) and judge:
@@ -390,6 +399,14 @@ class BatchPaperAnalyzer:
                                 reading_recommendation = "推荐精读"
                     except Exception:
                         pass
+                    # 若评语未给出 level，尝试从 YAML 中的 stars 推断 level
+                    if not level:
+                        m_stars_line = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
+                        if m_stars_line:
+                            inner = m_stars_line.group(1).strip()
+                            star_items = [x.strip().strip('\"\'') for x in inner.split(',') if x.strip()]
+                            if star_items:
+                                level = stars_to_level.get(star_items[0])
                     if not level:
                         # 兜底：维持原默认
                         level = "一般"
@@ -401,6 +418,13 @@ class BatchPaperAnalyzer:
                             reading_recommendation = "不推荐精读"
                         else:
                             reading_recommendation = "一般"
+                    # 同步并写回 stars 字段，使其与 level 等效
+                    target_stars = level_to_stars.get(level, "⭐⭐⭐")
+                    if re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE):
+                        text = re.sub(r"^stars:\s*\[(.*?)\]\s*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
+                    else:
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nstars: [\"{target_stars}\"]\n---"
                     
                     if text.endswith("---"):
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
