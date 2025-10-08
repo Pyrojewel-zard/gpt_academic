@@ -2,7 +2,6 @@ import json
 import re
 import os
 import time
-import glob
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
@@ -10,9 +9,8 @@ from typing import Dict, List, Generator, Tuple
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
-from crazy_functions.paper_fns.paper_download import extract_paper_id, extract_paper_ids, get_arxiv_paper, format_arxiv_id
+from crazy_functions.paper_fns.paper_download import extract_paper_id, get_arxiv_paper, format_arxiv_id
 import difflib
-import re
 
 
 def _estimate_tokens(text: str, llm_model: str) -> int:
@@ -698,7 +696,7 @@ def download_paper_by_id(paper_info, chatbot, history) -> str:
 
     # 创建保存目录 - 使用时间戳创建唯一文件夹
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    user_name = chatbot.get_user() if hasattr(chatbot, 'get_user') else "default"
+    # 保留获取用户逻辑如未来需要，但不创建未使用变量
     from toolbox import get_log_folder, get_user
     base_save_dir = get_log_folder(get_user(chatbot), plugin_name='paper_download')
     save_dir = os.path.join(base_save_dir, f"papers_{timestamp}")
