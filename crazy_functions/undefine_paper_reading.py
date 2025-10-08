@@ -2,14 +2,15 @@ import json
 import re
 import os
 import time
+import glob
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
-from typing import Dict, List, Generator, Tuple
+from typing import Dict, List, Generator, Tuple, Optional
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
-from crazy_functions.paper_fns.paper_download import extract_paper_id, get_arxiv_paper, format_arxiv_id
+from crazy_functions.paper_fns.paper_download import extract_paper_id, extract_paper_ids, get_arxiv_paper, format_arxiv_id
 import difflib
 
 
@@ -30,20 +31,6 @@ def _estimate_tokens(text: str, llm_model: str) -> int:
 def estimate_token_usage(inputs: List[str], outputs: List[str], llm_model: str) -> Dict:
     """
     独立的检测函数：估算一组交互的输入/输出token消耗。
-
-    Args:
-        inputs: 每次提问的输入列表（字符串）。
-        outputs: 每次回答的输出列表（字符串）。
-        llm_model: 用于估算token的模型名（需在配置中可用）。
-
-    Returns:
-        dict: {
-            'model': str,
-            'items': [ {'input_tokens': int, 'output_tokens': int, 'total_tokens': int} ... ],
-            'sum_input_tokens': int,
-            'sum_output_tokens': int,
-            'sum_total_tokens': int,
-        }
     """
     n = max(len(inputs or []), len(outputs or []))
     items = []
@@ -69,6 +56,7 @@ def estimate_token_usage(inputs: List[str], outputs: List[str], llm_model: str) 
         'sum_total_tokens': sum_in + sum_out,
     }
 
+
 @dataclass
 class PaperQuestion:
     """论文分析问题类"""
@@ -76,10 +64,11 @@ class PaperQuestion:
     question: str  # 问题内容
     importance: int  # 重要性 (1-5，5最高)
     description: str  # 问题描述
+    domain: str  # 适用领域 ("general", "rf_ic", "both")
 
 
-class BatchPaperAnalyzer:
-    """批量论文快速分析器"""
+class UnifiedBatchPaperAnalyzer:
+    """统一的批量论文分析器 - 支持主题分类和动态prompt"""
 
     def __init__(self, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot: List, history: List, system_prompt: str):
         """初始化分析器"""
@@ -92,10 +81,16 @@ class BatchPaperAnalyzer:
         self.results = {}
         self.paper_file_path = None
         self.secondary_category = None
+        self.paper_domain = "general"  # 论文领域分类
         self.context_history = []  # 与LLM共享的上下文（每篇论文注入一次全文）
         # 统计用：记录每次LLM交互的输入与输出
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
+        # 统计用：记录每篇论文处理时间
+        self._processing_started_at: Optional[datetime] = None
+        self._processing_finished_at: Optional[datetime] = None
+        self._processing_seconds: Optional[float] = None
+        
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
         with open(json_path, 'r', encoding='utf-8') as f:
@@ -105,37 +100,30 @@ class BatchPaperAnalyzer:
         category_lines = [f"{main} -> {', '.join(subs)}"
                         for main, subs in self.category_tree.items()]
         self.category_prompt_str = '\n'.join(category_lines)
-        # 定义论文分析问题库（与Paper_Reading保持一致）
+
+        # 定义统一的问题库（包含通用和RF IC专用问题）
         self.questions = [
+            # 通用问题（适用于所有论文）- 完全照搬 Batch_Paper_Reading.py
             PaperQuestion(
-                id="research_and_methods",
-                question="这篇论文的主要研究问题、目标和方法是什么？请分析：1)论文的核心研究问题和研究动机；2)论文提出的关键方法、模型或理论框架；3)这些方法如何解决研究问题。",
+                id="research_methods_and_data",
+                question="请概括论文的研究问题、目标与方法数据：1) 核心研究问题与动机；2) 关键方法/模型/理论框架；3) 实验设计与数据来源；4) 评估与合理性。",
                 importance=5,
-                description="研究问题与方法"
+                description="研究问题、方法与数据（合并）",
+                domain="both"
             ),
             PaperQuestion(
-                id="findings_and_innovation",
-                question="论文的主要发现、结论及创新点是什么？请分析：1)论文的核心结果与主要发现；2)作者得出的关键结论；3)研究的创新点与对领域的贡献；4)与已有工作的区别。",
+                id="findings_innovations_and_impact",
+                question="请总结论文主要发现与创新，并评估影响：1) 核心结果与结论；2) 创新点与贡献；3) 与已有工作的区别；4) 局限性与未来方向及潜在影响。",
                 importance=4,
-                description="研究发现与创新"
-            ),
-            PaperQuestion(
-                id="methodology_and_data",
-                question="论文使用了什么研究方法和数据？请详细分析：1)研究设计与实验设置；2)数据收集方法与数据集特点；3)分析技术与评估方法；4)方法学上的合理性。",
-                importance=3,
-                description="研究方法与数据"
-            ),
-            PaperQuestion(
-                id="limitations_and_impact",
-                question="论文的局限性、未来方向及潜在影响是什么？请分析：1)研究的不足与限制因素；2)作者提出的未来研究方向；3)该研究对学术界和行业可能产生的影响；4)研究结果的适用范围与推广价值。",
-                importance=2,
-                description="局限性与影响"
+                description="发现、创新、局限与影响（合并）",
+                domain="both"
             ),
             PaperQuestion(
                 id="worth_reading_judgment",
-                question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出“强烈推荐”、“推荐”、“一般”或“不推荐”的最终评级，并简要说明理由。",
+                question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出\"强烈推荐\"、\"推荐\"、\"一般\"或\"不推荐\"的最终评级，并简要说明理由。",
                 importance=2,
-                description="是否值得精读"
+                description="是否值得精读",
+                domain="both"
             ),
             PaperQuestion(
                 id="category_assignment",
@@ -153,9 +141,9 @@ class BatchPaperAnalyzer:
                     "4) 用一句话说明判断理由。"
                 ),
                 importance=1,
-                description="论文二级分类归属"
+                description="论文二级分类归属",
+                domain="both"
             ),              
-
             PaperQuestion(
                 id="core_algorithm_flowcharts",
                 question=(
@@ -180,18 +168,19 @@ class BatchPaperAnalyzer:
                     "```"
                 ),
                 importance=5,
-                description="核心算法/思路流程图（Mermaid）"
+                description="核心算法/思路流程图（Mermaid）",
+                domain="both"
             ),
             PaperQuestion(
                 id="core_idea_ppt_md",
                 question=(
-                    "请生成一份用于 PPT 的‘论文核心思路与算法’极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
+                    "请生成一份用于 PPT 的'论文核心思路与算法'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
                     "输出格式要求（严格遵守）：\n"
                     "# 总述（1 行）\n"
                     "- 用最简一句话概括论文做了什么、为何有效。\n\n"
                     "# 模块要点（与流程图对应）\n"
-                    "- 若存在多个流程图/模块：按“模块：名称”分组，每组列出 3-5 条‘图解要点’，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支。\n"
-                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条‘图解要点’。\n\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'图解要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支。\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'图解要点'。\n\n"
                     "# 关键算法摘要（5-8 条）\n"
                     "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景。\n\n"
                     "# 应用与效果（≤ 3 条，可省略）\n"
@@ -199,14 +188,178 @@ class BatchPaperAnalyzer:
                     "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
                 ),
                 importance=5,
-                description="PPT 用核心思路与算法（Markdown 极简版）"
+                description="PPT 用核心思路与算法（Markdown 极简版）",
+                domain="both"
+            ),
+            
+            # RF IC专用问题 - 完全照搬 batch_rf_ic_reading.py
+            PaperQuestion(
+                id="rf_ic_design_and_metrics",
+                question="请从设计与指标综合分析RF IC：1) 电路架构与拓扑；2) 关键模块与设计思路；3) 工艺/版图/校准要点；4) 主要性能指标与同类对比；5) 设计约束（功耗/面积/成本）。",
+                importance=5,
+                description="RF IC 设计、工艺与性能（合并）",
+                domain="rf_ic"
+            ),
+            PaperQuestion(
+                id="rf_ic_applications_challenges_future",
+                question="请评估RF IC的应用与前景：1) 目标场景与市场定位；2) 主要技术难点与创新方案；3) 产业化成熟度与差异化；4) 未来发展趋势与改进方向。",
+                importance=4,
+                description="RF IC 应用、挑战与未来（合并）",
+                domain="rf_ic"
+            ),
+            PaperQuestion(
+                id="rf_ic_category_assignment",
+                question=(
+                    "请根据论文内容，判断其最准确的二级分类归属。\n\n"
+                    "当前分类树如下（一级 -> 二级）：\n"
+                    f"{self.category_prompt_str}\n\n"
+                    "要求：\n"
+                    "1) 若完全匹配现有二级分类，直接回答：\n"
+                    "   归属：<一级类别> -> <二级子分类>\n"
+                    "2) 若需新建二级分类，回答：\n"
+                    "   新增二级：<一级类别> -> <新子分类名>\n"
+                    "3) 若需新建一级类别，回答：\n"
+                    "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
+                    "4) 用一句话说明判断理由。"
+                ),
+                importance=1,
+                description="论文二级分类归属",
+                domain="both"
+            ),      
+
+            PaperQuestion(
+                id="rf_ic_circuit_flowcharts",
+                question=(
+                    "请基于RF IC论文内容，绘制核心电路架构或系统级设计流程图，若论文包含多个相对独立的电路模块或设计阶段，请分别给出多个流程图。\n\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键电路模块/设计步骤，包含主要信号流与关键控制/判定；\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：射频前端电路；\n"
+                    "4) 仅聚焦核心电路逻辑，避免过度细节；\n"
+                    "5) 若只有单一核心电路，仅输出一个流程图；\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
+                    "7) RF IC专用示例：\n"
+                    "```mermaid\n"
+                    "flowchart TD\n"
+                    "    A[\"射频输入\"] --> B(\"LNA\")\n"
+                    "    B --> C{\"混频器\"}\n"
+                    "    C --> D[\"中频输出\"]\n"
+                    "    C --> |\"本振信号\"| E[\"VCO\"]\n"
+                    "```"
+                ),
+                importance=5,
+                description="RF IC核心电路架构流程图（Mermaid）",
+                domain="rf_ic"
+            ),
+            PaperQuestion(
+                id="rf_ic_ppt_md",
+                question=(
+                    "请生成一份用于 PPT 的'RF IC核心电路与设计思路'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括RF IC论文做了什么、为何有效。\n\n"
+                    "# 电路模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'电路要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键信号流。\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'电路要点'。\n\n"
+                    "# 关键设计摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/电路/输出/创新，不写背景。\n\n"
+                    "# 性能与效果（≤ 3 条，可省略）\n"
+                    "- 指标/应用/收益。\n\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
+                ),
+                importance=5,
+                description="PPT 用RF IC核心电路与设计思路（Markdown 极简版）",
+                domain="rf_ic"
             ),
         ]
 
         # 按重要性排序
         self.questions.sort(key=lambda q: q.importance, reverse=True)
 
-    # ---------- 关键词库工具 ----------
+    def _classify_paper_domain(self) -> Generator:
+        """使用LLM对论文进行主题分类，判断是否为RF IC相关论文"""
+        try:
+            classification_prompt = f"""请分析以下论文内容，判断其是否属于射频集成电路(RF IC)领域：
+
+论文内容片段：
+{self.paper_content[:2000]}...
+
+请根据以下标准进行判断：
+1. 如果论文涉及射频前端电路（LNA、PA、混频器、VCO、PLL等）
+2. 如果论文涉及无线通信系统集成、毫米波技术、太赫兹技术
+3. 如果论文涉及射频电路设计、半导体工艺在射频应用
+4. 如果论文涉及射频性能指标（噪声系数、线性度、效率等）
+5. 如果论文涉及到使用ML或者一系列EDA工具，涉及人工智能，那么就是GENERAL，即所有AI+RFIC也是GENERAL
+
+请只回答："RF_IC" 或 "GENERAL"，不要其他内容。"""
+
+            response = yield from request_gpt_model_in_new_thread_with_ui_alive(
+                inputs=classification_prompt,
+                inputs_show_user="正在分析论文主题分类...",
+                llm_kwargs=self.llm_kwargs,
+                chatbot=self.chatbot,
+                history=[],
+                sys_prompt="你是一个专业的论文分类助手，请根据论文内容准确判断其所属领域。"
+            )
+
+            if response and isinstance(response, str):
+                response = response.strip().upper()
+                if "RF_IC" in response:
+                    self.paper_domain = "rf_ic"
+                    self.chatbot.append(["主题分类", "检测到RF IC相关论文，将使用专业RF IC分析策略"])
+                else:
+                    self.paper_domain = "general"
+                    self.chatbot.append(["主题分类", "检测到通用论文，将使用通用分析策略"])
+            else:
+                self.paper_domain = "general"
+                self.chatbot.append(["主题分类", "无法确定主题，使用通用分析策略"])
+
+            yield from update_ui(chatbot=self.chatbot, history=self.history)
+            return True
+
+        except Exception as e:
+            self.paper_domain = "general"
+            self.chatbot.append(["分类错误", f"主题分类失败，使用通用策略: {str(e)}"])
+            yield from update_ui(chatbot=self.chatbot, history=self.history)
+            return False
+
+    def _get_domain_specific_questions(self) -> List[PaperQuestion]:
+        """根据论文领域获取相应的问题列表"""
+        if self.paper_domain == "rf_ic":
+            # RF IC论文：包含通用问题 + RF IC专用问题（包括分类问题）
+            return [q for q in self.questions if q.domain in ["both", "rf_ic"]]
+        else:
+            # 通用论文：只包含通用问题（包括分类问题）
+            return [q for q in self.questions if q.domain in ["both", "general"]]
+
+    def _get_domain_specific_system_prompt(self) -> str:
+        """根据论文领域获取相应的系统提示"""
+        if self.paper_domain == "rf_ic":
+            return """你是一个专业的射频集成电路(RF IC)分析专家，具有深厚的电路设计、半导体工艺和无线通信系统知识。请从RF IC专业角度深入分析论文，使用准确的术语，提供有见地的技术评估。"""
+        else:
+            return """你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"""
+
+    def _get_domain_specific_analysis_prompt(self, question: PaperQuestion) -> str:
+        """根据论文领域和问题生成相应的分析提示"""
+        if self.paper_domain == "rf_ic":
+            return f"""请基于已记住的射频集成电路论文全文，从RF IC专业角度回答问题：
+
+问题：{question.question}
+
+请从以下角度进行分析：
+1. 技术深度：深入分析电路设计原理和技术细节
+2. 工程价值：评估技术的实用性和产业化前景
+3. 创新性：识别技术突破和创新点
+4. 行业影响：分析对RF IC行业发展的意义
+
+请保持专业性和技术准确性，使用RF IC领域的专业术语。"""
+        else:
+            return f"请基于已记住的论文全文回答：{question.question}"
+
+    # ---------- 关键词库工具（与 Batch_Paper_Reading 保持一致） ----------
     def _get_keywords_db_path(self) -> str:
         return os.path.join(os.path.dirname(__file__), 'keywords.txt')
 
@@ -275,6 +428,31 @@ class BatchPaperAnalyzer:
         # 保存更新的关键词库
         self._save_keywords_db(db)
         return canonical_list, db
+
+    def _update_category_json(self, llm_answer: str):
+        """
+        解析 LLM 返回的归属/新增指令，并更新 paper.json
+        """
+        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
+
+        # 1) 新增一级
+        m1 = re.search(r'新增一级：(.+?) *-> *\[(.+?)\]', llm_answer)
+        if m1:
+            new_main = m1.group(1).strip()
+            new_subs = [s.strip() for s in m1.group(2).split(',')]
+            self.category_tree[new_main] = new_subs
+        else:
+            # 2) 新增二级
+            m2 = re.search(r'新增二级：(.+?) *-> *(.+)', llm_answer)
+            if m2:
+                main_cat = m2.group(1).strip()
+                new_sub = m2.group(2).strip()
+                if main_cat in self.category_tree and new_sub not in self.category_tree[main_cat]:
+                    self.category_tree[main_cat].append(new_sub)
+
+        # 写回
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(self.category_tree, f, ensure_ascii=False, indent=4)
 
     def _clean_yaml_list(self, yaml_text: str, list_fields: List[str]) -> str:
         """清理YAML文本中列表字段的None值"""
@@ -356,7 +534,8 @@ class BatchPaperAnalyzer:
                     # 以原样式写回（使用引号包裹，避免 YAML 解析问题）
                     rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
-                # 注入“归属”二级分类（若可用）
+                
+                # 注入"归属"二级分类（若可用）
                 try:
                     if getattr(self, 'secondary_category', None):
                         escaped = self.secondary_category.replace('\"', '\\\"')
@@ -364,19 +543,11 @@ class BatchPaperAnalyzer:
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
                     pass
+                
                 # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失再回退到默认
                 try:
                     level = None
                     reading_recommendation = None
-                    # 映射：level <-> stars，确保二者一致
-                    level_to_stars = {
-                        "强烈推荐": "⭐⭐⭐⭐⭐",
-                        "推荐": "⭐⭐⭐⭐",
-                        "一般": "⭐⭐⭐",
-                        "谨慎": "⭐⭐",
-                        "不推荐": "⭐",
-                    }
-                    stars_to_level = {v: k for k, v in level_to_stars.items()}
                     try:
                         judge = self.results.get("worth_reading_judgment", "")
                         if isinstance(judge, str) and judge:
@@ -397,14 +568,6 @@ class BatchPaperAnalyzer:
                                 reading_recommendation = "推荐精读"
                     except Exception:
                         pass
-                    # 若评语未给出 level，尝试从 YAML 中的 stars 推断 level
-                    if not level:
-                        m_stars_line = re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
-                        if m_stars_line:
-                            inner = m_stars_line.group(1).strip()
-                            star_items = [x.strip().strip('\"\'') for x in inner.split(',') if x.strip()]
-                            if star_items:
-                                level = stars_to_level.get(star_items[0])
                     if not level:
                         # 兜底：维持原默认
                         level = "一般"
@@ -416,13 +579,6 @@ class BatchPaperAnalyzer:
                             reading_recommendation = "不推荐精读"
                         else:
                             reading_recommendation = "一般"
-                    # 同步并写回 stars 字段，使其与 level 等效
-                    target_stars = level_to_stars.get(level, "⭐⭐⭐")
-                    if re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE):
-                        text = re.sub(r"^stars:\s*\[(.*?)\]\s*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
-                    else:
-                        if text.endswith("---"):
-                            text = text[:-3].rstrip() + f"\nstars: [\"{target_stars}\"]\n---"
                     
                     if text.endswith("---"):
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
@@ -433,6 +589,16 @@ class BatchPaperAnalyzer:
                 list_fields = ["urls", "doi", "journal_or_conference", "year", "source_code"]
                 text = self._clean_yaml_list(text, list_fields)
                 
+                # 强制设置 read_status 为 未阅读（无论模型如何返回）
+                try:
+                    if re.search(r"^read_status\s*:", text, flags=re.MULTILINE):
+                        text = re.sub(r"^read_status\s*:.*$", 'read_status: "未阅读"', text, flags=re.MULTILINE)
+                    else:
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + '\n' + 'read_status: "未阅读"' + '\n---'
+                except Exception:
+                    pass
+                
                 return text
             return None
 
@@ -440,31 +606,6 @@ class BatchPaperAnalyzer:
             self.chatbot.append(["警告", f"生成 YAML 头失败: {str(e)}"])
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return None
-    def _update_category_json(self, llm_answer: str):
-        """
-        解析 LLM 返回的归属/新增指令，并更新 paper.json
-        """
-        json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
-
-        # 1) 新增一级
-        m1 = re.search(r'新增一级：(.+?) *-> *\[(.+?)\]', llm_answer)
-        if m1:
-            new_main = m1.group(1).strip()
-            new_subs = [s.strip() for s in m1.group(2).split(',')]
-            self.category_tree[new_main] = new_subs
-        else:
-            # 2) 新增二级
-            m2 = re.search(r'新增二级：(.+?) *-> *(.+)', llm_answer)
-            if m2:
-                main_cat = m2.group(1).strip()
-                new_sub = m2.group(2).strip()
-                if main_cat in self.category_tree and new_sub not in self.category_tree[main_cat]:
-                    self.category_tree[main_cat].append(new_sub)
-
-        # 写回
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(self.category_tree, f, ensure_ascii=False, indent=4)
-
 
     def _load_paper(self, paper_path: str) -> Generator:
         from crazy_functions.doc_fns.text_content_loader import TextContentLoader
@@ -499,10 +640,13 @@ class BatchPaperAnalyzer:
             return False
 
     def _analyze_question(self, question: PaperQuestion) -> Generator:
-        """分析单个问题 - 直接显示问题和答案"""
+        """分析单个问题 - 根据领域动态调整分析策略"""
         try:
-            # 多轮对话：仅发送问题本身，依赖 context_history 中一次性注入的全文
-            prompt = f"请基于已记住的论文全文回答：{question.question}"
+            # 根据论文领域生成相应的分析提示
+            prompt = self._get_domain_specific_analysis_prompt(question)
+            
+            # 获取领域特定的系统提示
+            sys_prompt = self._get_domain_specific_system_prompt()
 
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,
@@ -510,7 +654,7 @@ class BatchPaperAnalyzer:
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=self.context_history or [],
-                sys_prompt="你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
+                sys_prompt=sys_prompt
             )
 
             if response:
@@ -540,13 +684,25 @@ class BatchPaperAnalyzer:
             yield from update_ui(chatbot=self.chatbot, history=self.history)
             return False
 
-
     def _generate_summary(self) -> Generator:
         """生成最终总结报告"""
-        self.chatbot.append(["生成报告", "正在整合分析结果，生成最终报告..."])
+        domain_label = "RF IC专业" if self.paper_domain == "rf_ic" else "通用"
+        self.chatbot.append(["生成报告", f"正在整合{domain_label}分析结果，生成最终报告..."])
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
-        summary_prompt = "请基于以下对论文的各个方面的分析，生成一份全面的论文解读报告。报告应该简明扼要地呈现论文的关键内容，并保持逻辑连贯性。"
+        if self.paper_domain == "rf_ic":
+            summary_prompt = """请基于以下对RF IC论文的各个方面的专业分析，生成一份全面的射频集成电路论文解读报告。
+
+报告要求：
+1. 突出RF IC技术特点和创新点
+2. 强调电路设计的技术价值
+3. 分析市场应用前景
+4. 评估技术成熟度
+5. 提供行业发展趋势洞察
+
+请保持专业性和技术深度，适合RF IC工程师和研究人员阅读。"""
+        else:
+            summary_prompt = "请基于以下对论文的各个方面的分析，生成一份全面的论文解读报告。报告应该简明扼要地呈现论文的关键内容，并保持逻辑连贯性。"
 
         for q in self.questions:
             if q.id in self.results:
@@ -556,11 +712,11 @@ class BatchPaperAnalyzer:
             # 使用单线程版本的请求函数，可以在前端实时显示生成结果
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=summary_prompt,
-                inputs_show_user="生成论文解读报告",
+                inputs_show_user=f"生成{domain_label}论文解读报告",
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=[],
-                sys_prompt="你是一个科研论文解读专家，请将多个方面的分析整合为一份完整、连贯、有条理的报告。报告应当重点突出，层次分明，并且保持学术性和客观性。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。"
+                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。{'对于RF IC论文，特别关注电路架构、信号流和设计思路的可视化表达。' if self.paper_domain == 'rf_ic' else ''}"
             )
 
             if response:
@@ -577,7 +733,8 @@ class BatchPaperAnalyzer:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         
         # 获取PDF文件名（不含扩展名）
-        pdf_filename = "未知论文"
+        domain_prefix = "RF_IC" if self.paper_domain == "rf_ic" else "通用"
+        pdf_filename = f"未知{domain_prefix}论文"
         if paper_file_path and os.path.exists(paper_file_path):
             pdf_filename = os.path.splitext(os.path.basename(paper_file_path))[0]
             # 清理文件名中的特殊字符，只保留字母、数字、中文和下划线
@@ -591,34 +748,25 @@ class BatchPaperAnalyzer:
         try:
             md_parts = []
             # 标题与整体报告（稍后在前加入 YAML 头）
-            md_parts.append(f"论文快速解读报告\n\n{report}")
+            domain_title = "射频集成电路论文专业解读报告" if self.paper_domain == "rf_ic" else "论文快速解读报告"
+            md_parts.append(f"{domain_title}\n\n{report}")
 
             # 优先写入：PPT 极简摘要（若有）
             if "core_idea_ppt_md" in self.results:
                 md_parts.append(f"\n\n## PPT 摘要\n\n{self.results['core_idea_ppt_md']}")
+            elif "rf_ic_ppt_md" in self.results:
+                md_parts.append(f"\n\n## RF IC PPT 摘要\n\n{self.results['rf_ic_ppt_md']}")
 
             # 其次写入：核心流程图（Mermaid）（若有，保持代码块原样）
             if "core_algorithm_flowcharts" in self.results:
                 md_parts.append(f"\n\n## 核心流程图\n\n{self.results['core_algorithm_flowcharts']}")
+            elif "rf_ic_circuit_flowcharts" in self.results:
+                md_parts.append(f"\n\n## RF IC 核心电路流程图\n\n{self.results['rf_ic_circuit_flowcharts']}")
 
-            # 其余分析项按问题列表顺序写入，但跳过已写入的两个
+            # 其余分析项按问题列表顺序写入，但跳过已写入的四个
             for q in self.questions:
-                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts"}:
+                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts", "rf_ic_ppt_md", "rf_ic_circuit_flowcharts"}:
                     md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
-
-            # 追加 Token 估算结果
-            try:
-                stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
-                if stats and stats.get('sum_total_tokens', 0) > 0:
-                    md_parts.append(
-                        "\n\n## Token 估算\n\n"
-                        f"- 模型: {stats.get('model')}\n\n"
-                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
-                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
-                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n"
-                    )
-            except Exception:
-                pass
 
             md_content = "".join(md_parts)
 
@@ -626,9 +774,41 @@ class BatchPaperAnalyzer:
             if hasattr(self, 'yaml_header') and self.yaml_header:
                 md_content = f"{self.yaml_header}\n\n" + md_content
 
+            # 追加 Token 估算结果
+            try:
+                stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
+                if stats and stats.get('sum_total_tokens', 0) > 0:
+                    md_content += (
+                        "## Token 估算\n\n"
+                        f"- 模型: {stats.get('model')}\n\n"
+                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
+                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
+                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n\n"
+                    )
+                # 紧跟 Token 估算后，追加每篇论文处理时间
+                try:
+                    dur = getattr(self, '_processing_seconds', None)
+                    started_at = getattr(self, '_processing_started_at', None)
+                    finished_at = getattr(self, '_processing_finished_at', None)
+                    if dur is not None and dur >= 0:
+                        minutes = int(dur // 60)
+                        seconds = int(dur % 60)
+                        started_str = started_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(started_at, datetime) else 'N/A'
+                        finished_str = finished_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(finished_at, datetime) else 'N/A'
+                        md_content += (
+                            "## 处理时间\n\n"
+                            f"- 开始时间: {started_str}\n"
+                            f"- 结束时间: {finished_str}\n"
+                            f"- 总耗时: {minutes}分{seconds}秒\n\n"
+                        )
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
             result_file = write_history_to_file(
                 history=[md_content],
-                file_basename=f"{timestamp}_{pdf_filename}_解读报告.md"
+                file_basename=f"{timestamp}_{pdf_filename}_{domain_prefix}解读报告.md"
             )
 
             if result_file and os.path.exists(result_file):
@@ -643,13 +823,24 @@ class BatchPaperAnalyzer:
 
     def analyze_paper(self, paper_path: str) -> Generator:
         """分析单篇论文主流程"""
+        # 记录处理开始时间
+        try:
+            self._processing_started_at = datetime.now()
+        except Exception:
+            self._processing_started_at = None
         # 加载论文
         success = yield from self._load_paper(paper_path)
         if not success:
             return None
 
-        # 分析关键问题 - 直接询问每个问题，不显示进度信息
-        for question in self.questions:
+        # 主题分类判断
+        yield from self._classify_paper_domain()
+
+        # 根据领域获取相应的问题列表
+        domain_questions = self._get_domain_specific_questions()
+
+        # 分析关键问题
+        for question in domain_questions:
             yield from self._analyze_question(question)
 
         # 生成总结报告
@@ -660,6 +851,14 @@ class BatchPaperAnalyzer:
 
         # 保存报告
         saved_file = self.save_report(final_report, self.paper_file_path)
+        # 记录处理结束时间及耗时
+        try:
+            self._processing_finished_at = datetime.now()
+            if self._processing_started_at is not None and self._processing_finished_at is not None:
+                self._processing_seconds = (self._processing_finished_at - self._processing_started_at).total_seconds()
+        except Exception:
+            self._processing_finished_at = None
+            self._processing_seconds = None
         
         return saved_file
 
@@ -696,9 +895,9 @@ def download_paper_by_id(paper_info, chatbot, history) -> str:
 
     # 创建保存目录 - 使用时间戳创建唯一文件夹
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # 保留获取用户逻辑如未来需要，但不创建未使用变量
+    user_name = chatbot.get_user() if hasattr(chatbot, 'get_user') else "default"
     from toolbox import get_log_folder, get_user
-    base_save_dir = get_log_folder(get_user(chatbot), plugin_name='paper_download')
+    base_save_dir = get_log_folder(get_user(chatbot), plugin_name='unified_paper_download')
     save_dir = os.path.join(base_save_dir, f"papers_{timestamp}")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -751,11 +950,11 @@ def download_paper_by_id(paper_info, chatbot, history) -> str:
 
 
 @CatchException
-def 批量论文速读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot: List,
+def 统一批量论文速读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot: List,
              history: List, system_prompt: str, user_request: str):
-    """主函数 - 批量论文速读"""
+    """主函数 - 统一批量论文速读（支持主题分类）"""
     # 初始化分析器
-    chatbot.append(["函数插件功能及使用方式", "批量论文速读：批量分析多个论文文件，为每篇论文生成独立的速读报告，适用于大量论文的快速理解。 <br><br>📋 使用方式：<br>1、输入包含多个PDF文件的文件夹路径<br>2、或者输入多个论文ID（DOI或arXiv ID），用逗号分隔<br>3、点击插件开始批量分析"])
+    chatbot.append(["函数插件功能及使用方式", "统一批量论文速读：智能识别论文主题（通用/RF IC），自动选择最适合的分析策略，为每篇论文生成专业的速读报告。 <br><br>📋 使用方式：<br>1、输入包含多个PDF文件的文件夹路径<br>2、或者输入多个论文ID（DOI或arXiv ID），用逗号分隔<br>3、点击插件开始智能批量分析<br><br>🎯 智能分析特性：<br>- 自动主题分类（通用论文 vs RF IC论文）<br>- 动态调整分析策略和问题集<br>- 专业术语和评估标准<br>- 统一的报告格式和YAML元信息"])
     yield from update_ui(chatbot=chatbot, history=history)
 
     paper_files = []
@@ -824,27 +1023,29 @@ def 批量论文速读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
         yield from update_ui(chatbot=chatbot, history=history)
         return
 
-    chatbot.append(["开始批量分析", f"找到 {len(paper_files)} 篇论文，开始批量分析..."])
+    chatbot.append(["开始智能批量分析", f"找到 {len(paper_files)} 篇论文，开始智能主题分类和批量分析..."])
     yield from update_ui(chatbot=chatbot, history=history)
 
-    # 创建批量分析器
-    analyzer = BatchPaperAnalyzer(llm_kwargs, plugin_kwargs, chatbot, history, system_prompt)
+    # 创建统一分析器
+    analyzer = UnifiedBatchPaperAnalyzer(llm_kwargs, plugin_kwargs, chatbot, history, system_prompt)
     
     # 批量分析每篇论文
     successful_reports = []
     failed_papers = []
+    domain_stats = {"general": 0, "rf_ic": 0}
     
     for i, paper_file in enumerate(paper_files):
         try:
-            chatbot.append([f"分析论文 {i+1}/{len(paper_files)}", f"正在分析: {os.path.basename(paper_file)}"])
+            chatbot.append([f"分析论文 {i+1}/{len(paper_files)}", f"正在智能分析: {os.path.basename(paper_file)}"])
             yield from update_ui(chatbot=chatbot, history=history)
             
             # 分析单篇论文
             saved_file = yield from analyzer.analyze_paper(paper_file)
             
             if saved_file:
-                successful_reports.append((os.path.basename(paper_file), saved_file))
-                chatbot.append([f"完成论文 {i+1}/{len(paper_files)}", f"成功分析并保存报告: {os.path.basename(saved_file)}"])
+                successful_reports.append((os.path.basename(paper_file), saved_file, analyzer.paper_domain))
+                domain_stats[analyzer.paper_domain] += 1
+                chatbot.append([f"完成论文 {i+1}/{len(paper_files)}", f"成功分析并保存报告: {os.path.basename(saved_file)} (领域: {analyzer.paper_domain})"])
             else:
                 failed_papers.append(os.path.basename(paper_file))
                 chatbot.append([f"失败论文 {i+1}/{len(paper_files)}", f"分析失败: {os.path.basename(paper_file)}"])
@@ -857,21 +1058,26 @@ def 批量论文速读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, chatbot:
             yield from update_ui(chatbot=chatbot, history=history)
 
     # 生成批量分析总结
-    summary = f"批量分析完成！\n\n"
+    summary = f"智能批量分析完成！\n\n"
     summary += f"📊 分析统计：\n"
     summary += f"- 总论文数：{len(paper_files)}\n"
     summary += f"- 成功分析：{len(successful_reports)}\n"
     summary += f"- 分析失败：{len(failed_papers)}\n\n"
     
+    summary += f"🎯 主题分类统计：\n"
+    summary += f"- 通用论文：{domain_stats['general']} 篇\n"
+    summary += f"- RF IC论文：{domain_stats['rf_ic']} 篇\n\n"
+    
     if successful_reports:
         summary += f"✅ 成功生成报告：\n"
-        for paper_name, report_path in successful_reports:
-            summary += f"- {paper_name} → {os.path.basename(report_path)}\n"
+        for paper_name, report_path, domain in successful_reports:
+            domain_label = "RF IC" if domain == "rf_ic" else "通用"
+            summary += f"- {paper_name} ({domain_label}) → {os.path.basename(report_path)}\n"
     
     if failed_papers:
         summary += f"\n❌ 分析失败的论文：\n"
         for paper_name in failed_papers:
             summary += f"- {paper_name}\n"
 
-    chatbot.append(["批量分析完成", summary])
-    yield from update_ui(chatbot=chatbot, history=history) 
+    chatbot.append(["智能批量分析完成", summary])
+    yield from update_ui(chatbot=chatbot, history=history)

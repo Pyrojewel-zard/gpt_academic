@@ -161,6 +161,29 @@ class BatchRFICAnalyzer:
         self._save_keywords_db(db)
         return canonical_list, db
 
+    def _clean_yaml_list(self, yaml_text: str, list_fields: List[str]) -> str:
+        """清理YAML文本中列表字段的None值"""
+        import re
+        for field in list_fields:
+            # 匹配列表字段的模式
+            pattern = rf"^{field}:\s*\[(.*?)\]\s*$"
+            match = re.search(pattern, yaml_text, flags=re.MULTILINE)
+            if match:
+                inner_content = match.group(1).strip()
+                if inner_content:
+                    # 解析列表内容，过滤掉None值
+                    items = [item.strip().strip('"\'') for item in inner_content.split(',')]
+                    # 过滤掉None、空字符串和"None"
+                    filtered_items = [item for item in items if item and item.lower() != 'none']
+                    if filtered_items:
+                        # 重新构建列表，保持引号格式
+                        rebuilt = ', '.join([f'"{item}"' for item in filtered_items])
+                        yaml_text = re.sub(pattern, f"{field}: [{rebuilt}]", yaml_text, flags=re.MULTILINE)
+                    else:
+                        # 如果列表为空，移除该字段
+                        yaml_text = re.sub(rf"^{field}:\s*\[.*?\]\s*$\n?", "", yaml_text, flags=re.MULTILINE)
+        return yaml_text
+
     def _generate_yaml_header(self) -> Generator:
         """基于论文内容与已得分析，生成 YAML 头部（核心元信息）——与 Batch_Paper_Reading 保持一致"""
         try:
@@ -187,9 +210,9 @@ class BatchRFICAnalyzer:
                 "journal_or_conference: [期刊或会议名称, None]\n"
                 "year: [年份, None]\n"
                 "source_code: [源码链接, None]\n"
-                "read_status: [已阅读, 未阅读]\n"
+                "read_status: [未阅读]\n"
                 "stars: [⭐⭐⭐⭐⭐, ⭐⭐⭐⭐, ⭐⭐⭐, ⭐⭐, ⭐]\n"
-                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐，read_status为未阅读。"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐"
             )
 
             yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
@@ -220,31 +243,51 @@ class BatchRFICAnalyzer:
                     rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = _re2.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=_re2.MULTILINE)
 
-                # 基于 worth_reading_judgment 提取中文“论文重要程度”，若缺失再回退到默认
+                # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失再回退到默认
                 try:
                     level = None
+                    reading_recommendation = None
                     try:
                         judge = self.results.get("worth_reading_judgment", "")
                         if isinstance(judge, str) and judge:
                             if "强烈推荐" in judge:
                                 level = "强烈推荐"
+                                reading_recommendation = "强烈推荐精读"
                             elif "不推荐" in judge:
                                 level = "不推荐"
+                                reading_recommendation = "不推荐精读"
                             elif "谨慎" in judge:
                                 level = "谨慎"
+                                reading_recommendation = "谨慎精读"
                             elif "一般" in judge:
                                 level = "一般"
+                                reading_recommendation = "一般"
                             elif "推荐" in judge:
                                 level = "推荐"
+                                reading_recommendation = "推荐精读"
                     except Exception:
                         pass
                     if not level:
                         # 兜底：维持原默认
                         level = "一般"
+                    if not reading_recommendation:
+                        # 兜底：根据重要程度推断是否精读
+                        if level in ["强烈推荐", "推荐"]:
+                            reading_recommendation = "推荐精读"
+                        elif level == "不推荐":
+                            reading_recommendation = "不推荐精读"
+                        else:
+                            reading_recommendation = "一般"
+                    
                     if text.endswith("---"):
-                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n---"
+                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
                 except Exception:
                     pass
+                
+                # 清理列表字段中的None值
+                list_fields = ["urls", "doi", "journal_or_conference", "year", "source_code"]
+                text = self._clean_yaml_list(text, list_fields)
+                
                 return text
             return None
 
