@@ -5,12 +5,51 @@ from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
 from typing import Dict, List, Generator
-from crazy_functions.Batch_Paper_Reading import estimate_token_usage
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
 from crazy_functions.paper_fns.paper_download import extract_paper_id, get_arxiv_paper, format_arxiv_id
 
+
+def estimate_token_usage(inputs: List[str], outputs: List[str], llm_model: str) -> Dict:
+    """估算一组交互的输入/输出token消耗（与统一速读实现保持一致接口）。"""
+    try:
+        from request_llms.bridge_all import model_info  # 动态导入，避免循环依赖
+        def _estimate_tokens(text: str) -> int:
+            try:
+                cnt_fn = model_info.get(llm_model, {}).get("token_cnt", None)
+                if cnt_fn is None:
+                    cnt_fn = model_info["gpt-3.5-turbo"]["token_cnt"]
+                return int(cnt_fn(text or ""))
+            except Exception:
+                return len(text or "")
+    except Exception:
+        def _estimate_tokens(text: str) -> int:
+            return len(text or "")
+
+    n = max(len(inputs or []), len(outputs or []))
+    items = []
+    sum_in = 0
+    sum_out = 0
+    for i in range(n):
+        inp = inputs[i] if i < len(inputs) else ""
+        out = outputs[i] if i < len(outputs) else ""
+        ti = _estimate_tokens(inp)
+        to = _estimate_tokens(out)
+        items.append({
+            'input_tokens': ti,
+            'output_tokens': to,
+            'total_tokens': ti + to,
+        })
+        sum_in += ti
+        sum_out += to
+    return {
+        'model': llm_model,
+        'items': items,
+        'sum_input_tokens': sum_in,
+        'sum_output_tokens': sum_out,
+        'sum_total_tokens': sum_in + sum_out,
+    }
 
 @dataclass
 class DeepReadQuestion:
@@ -186,6 +225,21 @@ class BatchPaperDetailAnalyzer:
                     "3) 可能引发的后续研究方向\n"
                     "4) 存在的伦理问题或社会影响\n"
                     "5) 改进和扩展的具体建议"
+                ),
+            ),
+
+            # 重要性与是否值得精读（用于生成推荐阅读等级和星级）
+            DeepReadQuestion(
+                id="worth_reading_judgment",
+                description="是否值得精读",
+                importance=4,
+                domain="both",
+                question=(
+                    "【重要性评估】\n"
+                    "请综合判断本文是否值得精读，并给出明确等级：\n"
+                    "- 仅在以下五个等级中选择其一：强烈推荐、推荐、一般、谨慎、不推荐；\n"
+                    "- 先给出等级原词（如：强烈推荐），再用1-2句说明理由；\n"
+                    "- 若信息不足，请保守给出“一般”。"
                 ),
             ),
             
@@ -639,8 +693,23 @@ class BatchPaperDetailAnalyzer:
                 )
             )
 
-            if isinstance(yaml_str, str) and yaml_str.strip().startswith("---") and yaml_str.strip().endswith("---"):
-                text = yaml_str.strip()
+            if isinstance(yaml_str, str):
+                # 预处理：去除可能的代码围栏，并提取 --- ... --- 块
+                raw = yaml_str.strip()
+                # 去除三引号代码块
+                m_code = re.search(r"^```[a-zA-Z]*\n([\s\S]*?)\n```$", raw, flags=re.MULTILINE)
+                if m_code:
+                    raw = m_code.group(1).strip()
+                # 提取 --- ... ---
+                if raw.count('---') >= 2:
+                    first = raw.find('---')
+                    last = raw.rfind('---')
+                    text = raw[first:last+3].strip()
+                else:
+                    # 若无分隔符，则包裹为 Front Matter
+                    text = f"---\n{raw}\n---"
+
+                # 规范化关键词列表
                 m = re.search(r"^keywords:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE)
                 if m:
                     inner = m.group(1).strip()
@@ -660,6 +729,13 @@ class BatchPaperDetailAnalyzer:
                 try:
                     level = None
                     reading_recommendation = None
+                    level_to_stars = {
+                        "强烈推荐": "⭐⭐⭐⭐⭐",
+                        "推荐": "⭐⭐⭐⭐",
+                        "一般": "⭐⭐⭐",
+                        "谨慎": "⭐⭐",
+                        "不推荐": "⭐",
+                    }
                     try:
                         judge = self.results.get("worth_reading_judgment", "")
                         if isinstance(judge, str) and judge:
@@ -690,6 +766,15 @@ class BatchPaperDetailAnalyzer:
                             reading_recommendation = "不推荐精读"
                         else:
                             reading_recommendation = "一般"
+                    # 仅根据推荐阅读等级映射生成星级：优先就地替换已有 stars 行；若不存在则追加
+                    target_stars = level_to_stars.get(level, "⭐⭐⭐")
+                    if re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE):
+                        text = re.sub(r"^stars:\s*\[(.*?)\]\s*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
+                    elif re.search(r"^stars:\s*.*$", text, flags=re.MULTILINE):
+                        text = re.sub(r"^stars:\s*.*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
+                    else:
+                        if text.endswith("---"):
+                            text = text[:-3].rstrip() + f"\nstars: [\"{target_stars}\"]\n---"
                     
                     if text.endswith("---"):
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"

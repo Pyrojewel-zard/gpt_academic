@@ -726,56 +726,11 @@ def get_crazy_functions():
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
 
-    try:
-        from crazy_functions.Batch_Paper_Reading import 批量论文速读
-        function_plugins.update(
-            {
-                "批量论文速读": {
-                    "Group": "学术",
-                    "Color": "stop",
-                    "AsButton": False,
-                    "Info": "批量分析多个论文文件，为每篇论文生成独立的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
-                    "Function": HotReload(批量论文速读),
-                },
-            }
-        )
-    except:
-        logger.error(trimmed_format_exc())
-        logger.error("Load function plugin failed")
+    # 已由统一版本替代：批量论文速读（移除旧插件注册）
 
-    try:
-        from crazy_functions.batch_paper_detail_reading import 批量论文精读
-        function_plugins.update(
-            {
-                "批量论文精读": {
-                    "Group": "学术",
-                    "Color": "stop",
-                    "AsButton": False,
-                    "Info": "批量进行论文精读，输出含方法推导、伪代码、复现清单与流程图的深度技术报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
-                    "Function": HotReload(批量论文精读),
-                },
-            }
-        )
-    except:
-        logger.error(trimmed_format_exc())
-        logger.error("Load function plugin failed")
+    # 已由智能版本替代：批量论文精读（移除旧插件注册）
 
-    try:
-        from crazy_functions.batch_rf_ic_reading import 批量射频集成电路论文速读
-        function_plugins.update(
-            {
-                "批量RF IC论文速读": {
-                    "Group": "学术",
-                    "Color": "stop",
-                    "AsButton": False,
-                    "Info": "专门针对射频集成电路领域的批量论文分析工具，为每篇RF IC论文生成专业的速读报告 | 输入参数为文件夹路径或多个论文ID（用逗号分隔）",
-                    "Function": HotReload(批量射频集成电路论文速读),
-                },
-            }
-        )
-    except:
-        logger.error(trimmed_format_exc())
-        logger.error("Load function plugin failed")
+    # 已由统一/智能版本替代：批量RF IC论文速读（移除旧插件注册）
 
     try:
         from crazy_functions.undefine_paper_reading import 统一批量论文速读
