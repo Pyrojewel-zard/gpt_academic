@@ -122,7 +122,7 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             
-            # 第三层：方法设计与技术细节
+            # 第三层：方法设计与技术细节（通用+RF IC合并版）
             DeepReadQuestion(
                 id="method_design_and_technical_details",
                 description="方法设计与技术细节",
@@ -136,6 +136,23 @@ class BatchPaperDetailAnalyzer:
                     "3) 算法的时间复杂度、空间复杂度以及收敛性分析\n"
                     "4) 实现中的关键技术难点和解决方案\n"
                     "5) 与现有方法在技术层面的本质区别是什么？"
+                ),
+            ),
+            
+            # RF IC专用：电路架构分析（补充性问题，仅RF IC论文回答）
+            DeepReadQuestion(
+                id="rf_ic_circuit_architecture_detail",
+                description="RF IC电路架构与工艺设计",
+                importance=5,
+                domain="rf_ic",
+                question=(
+                    "【RF IC技术深入】\n"
+                    "请详细分析RF IC论文的电路架构与工艺设计：\n"
+                    "1) 核心电路模块的架构设计（如LNA、PA、混频器、VCO、PLL等）\n"
+                    "2) 采用的半导体工艺技术（CMOS、SiGe、GaAs、SOI等）及其选择理由\n"
+                    "3) 关键器件设计原理和性能优化策略\n"
+                    "4) 工艺参数对射频电路性能的影响分析\n"
+                    "5) 工艺-器件-电路的协同设计创新点"
                 ),
             ),
             
@@ -183,15 +200,48 @@ class BatchPaperDetailAnalyzer:
                     "【第六层：工程复现】\n"
                     "基于前面的技术分析，请提供复现指导：\n"
                     "1) 复现所需的数据集、预训练模型和依赖资源\n"
-                    "2) 关键超参数及其调优策略（不涉及具体数值）\n"
+                    "2) 关键超参数及其调优策略\n"
                     "3) 训练和评估流程的关键步骤\n"
-                    "4) 硬件资源需求（GPU/CPU/内存/存储）和时间成本估算\n"
+                    "4) 硬件资源需求和时间成本估算\n"
                     "5) 可能遇到的实现难点和解决方案\n"
                     "6) 开源代码的可用性和许可证情况"
                 ),
             ),
             
+            # RF IC专用：性能指标与设计方法（合并版）
+            DeepReadQuestion(
+                id="rf_ic_performance_and_methods",
+                description="RF IC性能指标与设计方法",
+                importance=5,
+                domain="rf_ic",
+                question=(
+                    "【RF IC性能与方法】\n"
+                    "请分析RF IC论文的性能指标与设计方法学：\n"
+                    "1) 核心性能指标（频率、带宽、增益、NF、线性度、效率等）\n"
+                    "2) 设计约束条件（功耗预算、面积限制、成本控制）与PPA权衡策略\n"
+                    "3) 采用的设计流程、方法学创新和关键设计决策\n"
+                    "4) RF EDA工具链的选择与使用策略\n"
+                    "5) 版图设计、布局布线和射频优化技术\n"
+                    "6) 关键路径分析和性能瓶颈识别"
+                ),
+            ),
             
+            # RF IC专用：制造、测试与市场
+            DeepReadQuestion(
+                id="rf_ic_manufacturing_market_analysis",
+                description="RF IC制造、测试与市场分析",
+                importance=4,
+                domain="rf_ic",
+                question=(
+                    "【RF IC制造与市场】\n"
+                    "请分析RF IC论文的制造、测试与应用前景：\n"
+                    "1) 制造工艺的可行性、良率分析和成本预估\n"
+                    "2) 射频测试策略、测试覆盖率设计和可靠性评估\n"
+                    "3) 封装技术、系统级集成方案和寿命分析\n"
+                    "4) 目标应用领域、市场定位和差异化优势\n"
+                    "5) 技术成熟度、产业化时间表和商业价值评估"
+                ),
+            ),
             
             # 第八层：影响评估与未来展望
             DeepReadQuestion(
@@ -221,56 +271,54 @@ class BatchPaperDetailAnalyzer:
                     "请综合判断本文是否值得精读，并给出明确等级：\n"
                     "- 仅在以下五个等级中选择其一：强烈推荐、推荐、一般、谨慎、不推荐；\n"
                     "- 先给出等级原词（如：强烈推荐），再用1-2句说明理由；\n"
-                    "- 若信息不足，请保守给出“一般”。"
+                    "- 若信息不足，请保守给出\"一般\"。"
                 ),
             ),
             
-            # 第九层：核心算法流程图与架构设计
+            # 合并的流程图与可视化问题（自适应通用+RF IC）
             DeepReadQuestion(
-                id="core_algorithm_flowcharts_and_architecture",
-                description="核心算法流程图与架构设计",
+                id="architecture_flowcharts_and_visualization",
+                description="核心架构流程图与可视化",
                 importance=5,
                 domain="both",
                 question=(
-                    "【第九层：算法可视化】\n"
-                    "基于前面的技术分析，请绘制核心算法或思路的详细流程图：\n"
+                    "【可视化展示】\n"
+                    "请绘制论文核心架构或算法流程的详细流程图：\n"
                     "要求：\n"
                     "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
                     "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块\n"
                     "3) 每个流程图前以一句话标明模块/阶段名称\n"
-                    "4) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式\n"
-                    "5) 重点展示：整体架构、核心算法流程、数据流向、关键决策点\n"
-                    "6) 若论文包含多个相对独立的模块或阶段，请分别给出多个流程图"
+                    "4) 格式约束：节点名用引号包裹如[\"节点名\"]，箭头标签采用|\"标签名\"|形式\n"
+                    "5) 重点展示：整体架构、核心流程、数据流向、关键决策点\n"
+                    "6) 若论文包含多个相对独立的模块，请分别给出多个流程图\n"
+                    "7) RF IC论文请特别突出：电路模块、信号流、关键控制逻辑"
                 ),
             ),
             
-            # 第十层：PPT摘要与演示材料
+            # 合并的演示材料问题（自适应通用+RF IC）
             DeepReadQuestion(
-                id="ppt_summary_and_presentation_materials",
-                description="PPT摘要与演示材料",
+                id="presentation_summary_and_materials",
+                description="演示材料与PPT摘要",
                 importance=4,
                 domain="both",
                 question=(
-                    "【第十层：演示材料】\n"
-                    "基于前面的深入分析，请生成用于 PPT 的'论文核心思路与算法'详细 Markdown 摘要：\n"
-                    "\n"
+                    "【演示材料】\n"
+                    "基于前面的深入分析，请生成用于PPT的核心思路详细Markdown摘要：\n"
                     "输出格式要求（严格遵守）：\n"
-                    "# 总述（1 行）\n"
-                    "- 用最简一句话概括论文做了什么、为何有效\n"
+                    "# 总述（1行）\n"
+                    "- 一句话概括论文做了什么、为何有效\n"
                     "\n"
-                    "# 模块要点（与流程图对应）\n"
-                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'图解要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支\n"
-                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'图解要点'\n"
+                    "# 核心模块要点（与流程图对应，3-5条）\n"
+                    "- 每条≤14字，概括输入→处理→输出与关键分支\n"
+                    "- RF IC请聚焦：电路模块、信号流、性能指标\n"
                     "\n"
-                    "# 关键算法摘要（5-8 条）\n"
-                    "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景\n"
+                    "# 关键方法摘要（5-8条）\n"
+                    "- 每条≤16字，聚焦创新点和核心机制\n"
                     "\n"
-                    "# 应用与效果（≤ 3 条，可省略）\n"
-                    "- 场景/指标/收益\n"
+                    "# 应用与效果（2-3条，可选）\n"
+                    "- 应用场景/性能指标/主要收益\n"
                     "\n"
-                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身"
+                    "注意：仅输出上述Markdown结构，不嵌入代码，不重复流程图本身"
                 ),
             ),
             
@@ -282,7 +330,7 @@ class BatchPaperDetailAnalyzer:
                 domain="both",
                 question=(
                     "【第十一层：要点总结】\n"
-                    "基于前面十层的深入分析，请给出精炼的执行摘要：\n"
+                    "基于前面的深入分析，请给出精炼的执行摘要：\n"
                     "格式要求（Markdown，不包含代码）：\n"
                     "## 核心价值\n"
                     "- 一句话概括方法的核心价值\n"
@@ -298,168 +346,6 @@ class BatchPaperDetailAnalyzer:
                     "\n"
                     "## 注意事项\n"
                     "- 2-3条重要限制或注意事项"
-                ),
-            ),
-            
-            # RF IC专用问题
-            # RF IC第一层：电路架构与系统设计
-            DeepReadQuestion(
-                id="rf_ic_circuit_architecture_and_system",
-                description="RF IC电路架构与系统设计",
-                importance=5,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第一层：电路架构分析】\n"
-                    "基于前面的问题域理解，请深入分析RF IC论文的电路架构：\n"
-                    "1) 核心电路模块的架构设计（如LNA、PA、混频器、VCO、PLL等射频前端电路）\n"
-                    "2) 系统级集成方案和模块间接口设计\n"
-                    "3) 电路拓扑结构的特点、优势和创新点\n"
-                    "4) 整体芯片的层次化设计思路和关键设计决策\n"
-                    "5) 与现有RF IC架构的本质区别和技术突破"
-                ),
-            ),
-            
-            # RF IC专用流程图
-            DeepReadQuestion(
-                id="rf_ic_circuit_flowcharts",
-                description="RF IC核心电路架构流程图",
-                importance=5,
-                domain="rf_ic",
-                question=(
-                    "【RF IC电路可视化】\n"
-                    "基于前面的RF IC技术分析，请绘制核心电路架构或系统级设计流程图：\n"
-                    "\n"
-                    "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
-                    "2) 推荐使用 flowchart TD ，节点需概括关键电路模块/设计步骤，包含主要信号流与关键控制/判定\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：射频前端电路\n"
-                    "4) 仅聚焦核心电路逻辑，避免过度细节\n"
-                    "5) 若只有单一核心电路，仅输出一个流程图\n"
-                    "6) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格\n"
-                    "   - 根据逻辑选择 flowchart TD（从上到下）\n"
-                    "7) RF IC专用示例：\n"
-                    "```mermaid\n"
-                    "flowchart TD\n"
-                    "    A[\"射频输入\"] --> B(\"LNA\")\n"
-                    "    B --> C{\"混频器\"}\n"
-                    "    C --> D[\"中频输出\"]\n"
-                    "    C --> |\"本振信号\"| E[\"VCO\"]\n"
-                    "```"
-                ),
-            ),
-            
-            # RF IC专用PPT摘要
-            DeepReadQuestion(
-                id="rf_ic_ppt_md",
-                description="RF IC PPT摘要与演示材料",
-                importance=4,
-                domain="rf_ic",
-                question=(
-                    "【RF IC演示材料】\n"
-                    "基于前面的RF IC深入分析，请生成用于 PPT 的'RF IC核心电路与设计思路'详细 Markdown 摘要：\n"
-                    "\n"
-                    "输出格式要求（严格遵守）：\n"
-                    "# 总述（1 行）\n"
-                    "- 用最简一句话概括RF IC论文做了什么、为何有效\n"
-                    "\n"
-                    "# 电路模块要点（与流程图对应）\n"
-                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'电路要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键信号流\n"
-                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'电路要点'\n"
-                    "\n"
-                    "# 关键设计摘要（5-8 条）\n"
-                    "- 每条 ≤ 16 字，聚焦输入/电路/输出/创新，不写背景\n"
-                    "\n"
-                    "# 性能与效果（≤ 3 条，可省略）\n"
-                    "- 指标/应用/收益\n"
-                    "\n"
-                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身"
-                ),
-            ),
-            
-            # RF IC第二层：工艺技术与器件设计
-            DeepReadQuestion(
-                id="rf_ic_process_technology_and_devices",
-                description="工艺技术与器件设计",
-                importance=5,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第二层：工艺与器件】\n"
-                    "基于前面的架构分析，请深入分析工艺技术选择：\n"
-                    "1) 采用的半导体工艺技术（CMOS、SiGe、GaAs、SOI等射频工艺）\n"
-                    "2) 关键器件的设计原理和性能优化策略\n"
-                    "3) 工艺参数对射频电路性能的影响分析\n"
-                    "4) 先进射频工艺技术的应用和挑战\n"
-                    "5) 工艺-器件-电路协同设计的创新点"
-                ),
-            ),
-            
-            # RF IC第三层：性能指标与设计约束
-            DeepReadQuestion(
-                id="rf_ic_performance_metrics_and_constraints",
-                description="性能指标与设计约束",
-                importance=5,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第三层：性能与约束】\n"
-                    "基于前面的技术设计，请分析RF IC的关键性能指标：\n"
-                    "1) 核心性能指标（频率、带宽、增益、噪声系数、线性度、效率等）\n"
-                    "2) 设计约束条件（功耗预算、面积限制、成本控制等）\n"
-                    "3) 性能-功耗-面积(PPA)的权衡策略\n"
-                    "4) 关键路径分析和性能瓶颈识别\n"
-                    "5) 与竞品的性能对比和优势分析"
-                ),
-            ),
-            
-            # RF IC第四层：设计方法与EDA工具
-            DeepReadQuestion(
-                id="rf_ic_design_methodology_and_eda",
-                description="设计方法与EDA工具",
-                importance=4,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第四层：设计方法学】\n"
-                    "基于前面的性能分析，请分析设计方法学：\n"
-                    "1) 采用的设计流程和方法学创新\n"
-                    "2) RF EDA工具链的选择和使用策略\n"
-                    "3) 自动化设计技术和AI辅助设计方法\n"
-                    "4) 版图设计、布局布线和射频优化技术\n"
-                    "5) 设计验证和测试策略"
-                ),
-            ),
-            
-            # RF IC第五层：制造与测试
-            DeepReadQuestion(
-                id="rf_ic_manufacturing_and_testing",
-                description="制造与测试",
-                importance=4,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第五层：制造与测试】\n"
-                    "基于前面的设计分析，请分析制造和测试：\n"
-                    "1) 制造工艺的可行性和良率分析\n"
-                    "2) 射频测试策略和测试覆盖率设计\n"
-                    "3) 封装技术和系统级集成方案\n"
-                    "4) 可靠性分析和寿命评估\n"
-                    "5) 量产可行性和成本分析"
-                ),
-            ),
-            
-            # RF IC第六层：应用场景与市场定位
-            DeepReadQuestion(
-                id="rf_ic_applications_and_market",
-                description="应用场景与市场定位",
-                importance=3,
-                domain="rf_ic",
-                question=(
-                    "【RF IC第六层：应用与市场】\n"
-                    "基于前面的技术分析，请分析应用前景：\n"
-                    "1) 目标应用领域和市场定位（如5G、WiFi、蓝牙、卫星通信等）\n"
-                    "2) 与现有解决方案的差异化优势\n"
-                    "3) 技术成熟度和产业化时间表\n"
-                    "4) 潜在客户和合作伙伴分析\n"
-                    "5) 市场前景和商业价值评估"
                 ),
             ),
         ]
@@ -516,9 +402,9 @@ class BatchPaperDetailAnalyzer:
     def _get_domain_specific_questions(self) -> List[DeepReadQuestion]:
         """根据论文领域获取相应的问题列表"""
         if self.paper_domain == "rf_ic":
-            # RF IC论文：包含RF IC专用问题和核心通用问题，排除通用问题中的核心算法流程图和PPT摘要（因为RF IC有专门的版本）
-            excluded_ids = {"core_algorithm_flowcharts_and_architecture", "ppt_summary_and_presentation_materials"}
-            return [q for q in self.questions if q.domain == "rf_ic" or (q.domain == "both" and q.id not in excluded_ids)]
+            # RF IC论文：包含RF IC专用问题和核心通用问题，排除通用版流程图和PPT摘要（使用合并版）
+            excluded_ids = set()  # 不需要排除了，因为已经合并
+            return [q for q in self.questions if q.domain == "rf_ic" or (q.domain == "both")]
         else:
             # 通用论文：只包含通用问题，排除RF IC专用问题
             return [q for q in self.questions if q.domain in ["both", "general"]]
@@ -529,6 +415,23 @@ class BatchPaperDetailAnalyzer:
             return """你是一个专业的射频集成电路(RF IC)分析专家，具有深厚的电路设计、半导体工艺和无线通信系统知识。请从RF IC专业角度深入分析论文，使用准确的术语，提供有见地的技术评估。"""
         else:
             return """你是一个专业的科研论文分析助手，进行递进式深度分析。每个问题都基于前面的分析结果进行深入。输出以概念与方法论层面为主，不包含任何代码或伪代码。如涉及Mermaid流程图，请使用```mermaid 包裹并保持语法正确，其余保持自然语言。注意保持分析的连贯性和递进性。"""
+
+    def _get_domain_config(self) -> Dict:
+        """获取当前论文领域的配置"""
+        if self.paper_domain == "rf_ic":
+            return {
+                "label": "RF IC专业",
+                "result_label": "【递进式RF IC分析结果】",
+                "report_title": "射频集成电路论文专业精读报告",
+                "file_prefix": "RF_IC",
+            }
+        else:
+            return {
+                "label": "通用",
+                "result_label": "【递进式分析结果】",
+                "report_title": "论文精读技术报告",
+                "file_prefix": "通用",
+            }
 
     def _estimate_tokens(self, text: str) -> int:
         """估算文本的token数量（粗略估算：1 token ≈ 4 字符）"""
@@ -552,9 +455,13 @@ class BatchPaperDetailAnalyzer:
             "experimental_validation_and_effectiveness": 4,
             "assumptions_limitations_and_threats": 3,
             "reproduction_guide_and_engineering": 4,
-            "flowcharts_and_architecture": 3,
+            "architecture_flowcharts_and_visualization": 3,
             "impact_assessment_and_future_directions": 2,
-            "executive_summary_and_key_points": 5
+            "executive_summary_and_key_points": 5,
+            "rf_ic_circuit_architecture_detail": 5,
+            "rf_ic_performance_and_methods": 5,
+            "rf_ic_manufacturing_market_analysis": 4,
+            "presentation_summary_and_materials": 4,
         }
         
         # 根据当前问题的重要性，智能选择引用的前面分析
@@ -603,9 +510,13 @@ class BatchPaperDetailAnalyzer:
             "experimental_validation_and_effectiveness": ["theoretical_framework_and_contributions", "method_design_and_technical_details"],
             "assumptions_limitations_and_threats": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
             "reproduction_guide_and_engineering": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
-            "flowcharts_and_architecture": ["method_design_and_technical_details"],
+            "architecture_flowcharts_and_visualization": ["method_design_and_technical_details"],
             "impact_assessment_and_future_directions": ["assumptions_limitations_and_threats"],
-            "executive_summary_and_key_points": ["theoretical_framework_and_contributions", "method_design_and_technical_details", "experimental_validation_and_effectiveness"]
+            "executive_summary_and_key_points": ["theoretical_framework_and_contributions", "method_design_and_technical_details", "experimental_validation_and_effectiveness"],
+            "rf_ic_circuit_architecture_detail": ["problem_domain_and_motivation", "method_design_and_technical_details"],
+            "rf_ic_performance_and_methods": ["method_design_and_technical_details", "rf_ic_circuit_architecture_detail"],
+            "rf_ic_manufacturing_market_analysis": ["rf_ic_performance_and_methods"],
+            "presentation_summary_and_materials": ["method_design_and_technical_details"],
         }
         
         return prev_id in dependencies.get(current_id, [])
@@ -808,7 +719,7 @@ class BatchPaperDetailAnalyzer:
                     merged, _ = self._merge_keywords_with_db(raw_list)
                     rebuilt = ', '.join([f'\"{k}\"' for k in merged])
                     text = re.sub(r"^keywords:\s*\[(.*?)\]\s*$", f"keywords: [{rebuilt}]", text, flags=re.MULTILINE)
-                # 注入“归属”二级分类到 YAML 头（仅写入分类路径本身，并用引号包裹）
+                # 注入"归属"二级分类到 YAML 头（仅写入分类路径本身，并用引号包裹）
                 try:
                     if getattr(self, 'secondary_category', None):
                         escaped = self.secondary_category.replace('\"', '\\\"')
@@ -954,27 +865,28 @@ class BatchPaperDetailAnalyzer:
             return False
 
     def _generate_report(self) -> Generator:
-        domain_label = "RF IC专业" if self.paper_domain == "rf_ic" else "通用"
+        domain_label = self._get_domain_config()["label"]
         self.chatbot.append(["生成报告", f"正在整合{domain_label}递进式精读结果，生成深度技术报告..."])
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
-        if self.paper_domain == "rf_ic":
-            prompt = (
+        # 统一构建报告提示（避免重复代码）
+        prompt_prefix = {
+            "rf_ic": (
                 "请将以下对RF IC论文的递进式精读分析整理为完整的技术报告。"
                 "报告应体现RF IC专业分析的递进逻辑：从问题域理解→理论构建→技术实现→实验验证→批判分析→工程复现→架构可视化→影响评估→要点总结。"
                 "同时包含RF IC专业分析：电路架构→工艺技术→性能指标→设计方法→制造测试→应用市场。"
                 "层次清晰，突出RF IC设计的技术深度和工程价值，不包含任何代码/伪代码/命令行。"
                 "若包含```mermaid 代码块，请原样保留。\n\n"
-                "【递进式RF IC分析结果】"
-            )
-        else:
-            prompt = (
+            ),
+            "general": (
                 "请将以下递进式精读分析整理为完整的技术报告。"
                 "报告应体现分析的递进逻辑：从问题域理解→理论构建→技术实现→实验验证→批判分析→工程复现→架构可视化→影响评估→要点总结。"
                 "层次清晰，突出核心思想与实验设计要点，不包含任何代码/伪代码/命令行。"
                 "若包含```mermaid 代码块，请原样保留。\n\n"
-                "【递进式分析结果】"
             )
+        }
+        
+        prompt = prompt_prefix.get(self.paper_domain, prompt_prefix["general"]) + self._get_domain_config()["result_label"]
         
         # 按照递进顺序组织分析结果
         layer_order = [
@@ -985,22 +897,17 @@ class BatchPaperDetailAnalyzer:
             "assumptions_limitations_and_threats",
             "reproduction_guide_and_engineering",
             "impact_assessment_and_future_directions",
-            "core_algorithm_flowcharts_and_architecture",
-            "ppt_summary_and_presentation_materials",
+            "architecture_flowcharts_and_visualization",
+            "presentation_summary_and_materials",
             "executive_summary_and_key_points"
         ]
         
         # 如果是RF IC论文，添加RF IC专用问题
         if self.paper_domain == "rf_ic":
             rf_ic_layer_order = [
-                "rf_ic_circuit_architecture_and_system",
-                "rf_ic_process_technology_and_devices",
-                "rf_ic_performance_metrics_and_constraints",
-                "rf_ic_design_methodology_and_eda",
-                "rf_ic_manufacturing_and_testing",
-                "rf_ic_applications_and_market",
-                "rf_ic_circuit_flowcharts",
-                "rf_ic_ppt_md"
+                "rf_ic_circuit_architecture_detail",
+                "rf_ic_performance_and_methods",
+                "rf_ic_manufacturing_market_analysis",
             ]
             layer_order.extend(rf_ic_layer_order)
         
@@ -1044,8 +951,8 @@ class BatchPaperDetailAnalyzer:
         return resp or "报告生成失败"
 
     def _extract_secondary_category(self, report: str) -> str:
-        """从报告中提取“归属：”后的二级分类文本，只保留类似
-        “7. 机器学习辅助设计 (ML-Aided RF Design) -> 系统级建模与快速综合”。
+        """从报告中提取"归属："后的二级分类文本，只保留类似
+        "7. 机器学习辅助设计 (ML-Aided RF Design) -> 系统级建模与快速综合"。
         """
         try:
             if not isinstance(report, str):
@@ -1061,7 +968,8 @@ class BatchPaperDetailAnalyzer:
 
     def save_report(self, report: str) -> str:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        domain_prefix = "RF_IC" if self.paper_domain == "rf_ic" else "通用"
+        domain_cfg = self._get_domain_config()
+        domain_prefix = domain_cfg["file_prefix"]
         pdf_basename = f"未知{domain_prefix}论文"
         if self.paper_file_path and os.path.exists(self.paper_file_path):
             pdf_basename = os.path.splitext(os.path.basename(self.paper_file_path))[0]
@@ -1070,24 +978,20 @@ class BatchPaperDetailAnalyzer:
                 pdf_basename = pdf_basename[:50]
 
         parts: List[str] = []
-        domain_title = "射频集成电路论文专业精读报告" if self.paper_domain == "rf_ic" else "论文精读技术报告"
+        domain_title = domain_cfg["report_title"]
         parts.append(f"{domain_title}\n\n{report}")
         
         # 优先追加执行级摘要、流程图与PPT材料
         if "executive_summary_and_key_points" in self.results:
             parts.append(f"\n\n## 执行级摘要\n\n{self.results['executive_summary_and_key_points']}")
-        if "core_algorithm_flowcharts_and_architecture" in self.results:
-            parts.append(f"\n\n## 核心算法流程图\n\n{self.results['core_algorithm_flowcharts_and_architecture']}")
-        if "ppt_summary_and_presentation_materials" in self.results:
-            parts.append(f"\n\n## PPT演示材料\n\n{self.results['ppt_summary_and_presentation_materials']}")
-        if "rf_ic_circuit_flowcharts" in self.results:
-            parts.append(f"\n\n## RF IC电路架构流程图\n\n{self.results['rf_ic_circuit_flowcharts']}")
-        if "rf_ic_ppt_md" in self.results:
-            parts.append(f"\n\n## RF IC PPT演示材料\n\n{self.results['rf_ic_ppt_md']}")
+        if "architecture_flowcharts_and_visualization" in self.results:
+            parts.append(f"\n\n## 核心架构流程图\n\n{self.results['architecture_flowcharts_and_visualization']}")
+        if "presentation_summary_and_materials" in self.results:
+            parts.append(f"\n\n## 演示材料\n\n{self.results['presentation_summary_and_materials']}")
         
         # 追加其余维度
         for q in self.questions:
-            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "core_algorithm_flowcharts_and_architecture", "ppt_summary_and_presentation_materials", "rf_ic_circuit_flowcharts", "rf_ic_ppt_md"}:
+            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "architecture_flowcharts_and_visualization", "presentation_summary_and_materials"}:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
         # 追加 Token 估算结果

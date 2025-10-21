@@ -1,13 +1,3 @@
----
-alwaysApply: true
----
-
-
-
-## python执行路径
-conda activate gpt_academic
-先加载环境再执行
-
 ## Git Auto-Commit Guidance (single-dev, commit to main)
 
 When a feature/fix is completed and tests/build pass, commit directly to `main` using Conventional Commits style messages.
