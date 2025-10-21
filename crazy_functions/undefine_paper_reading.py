@@ -2,7 +2,6 @@ import json
 import re
 import os
 import time
-import glob
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
@@ -10,7 +9,7 @@ from typing import Dict, List, Generator, Tuple, Optional
 from crazy_functions.crazy_utils import request_gpt_model_in_new_thread_with_ui_alive
 from toolbox import update_ui, promote_file_to_downloadzone, write_history_to_file, CatchException, report_exception
 from shared_utils.fastapi_server import validate_path_safety
-from crazy_functions.paper_fns.paper_download import extract_paper_id, extract_paper_ids, get_arxiv_paper, format_arxiv_id
+from crazy_functions.paper_fns.paper_download import extract_paper_id, get_arxiv_paper, format_arxiv_id
 import difflib
 
 
@@ -86,10 +85,6 @@ class UnifiedBatchPaperAnalyzer:
         # 统计用：记录每次LLM交互的输入与输出
         self._token_inputs: List[str] = []
         self._token_outputs: List[str] = []
-        # 统计用：记录每篇论文处理时间
-        self._processing_started_at: Optional[datetime] = None
-        self._processing_finished_at: Optional[datetime] = None
-        self._processing_seconds: Optional[float] = None
         
         # ---------- 读取分类树 ----------
         json_path = os.path.join(os.path.dirname(__file__), 'paper.json')
@@ -101,27 +96,42 @@ class UnifiedBatchPaperAnalyzer:
                         for main, subs in self.category_tree.items()]
         self.category_prompt_str = '\n'.join(category_lines)
 
-        # 定义统一的问题库（包含通用和RF IC专用问题）
+        # 定义速读问题库（精简版，专注于快速筛选）
         self.questions = [
-            # 通用问题（适用于所有论文）- 完全照搬 Batch_Paper_Reading.py
+            # 通用速读问题（适用于所有论文）
             PaperQuestion(
                 id="research_methods_and_data",
-                question="请概括论文的研究问题、目标与方法数据：1) 核心研究问题与动机；2) 关键方法/模型/理论框架；3) 实验设计与数据来源；4) 评估与合理性。",
+                question="请简要概括论文的核心内容：1) 研究问题是什么？2) 主要方法/技术路线是什么？3) 实验数据来源如何？",
                 importance=5,
-                description="研究问题、方法与数据（合并）",
+                description="研究问题与方法概述",
                 domain="both"
             ),
             PaperQuestion(
                 id="findings_innovations_and_impact",
-                question="请总结论文主要发现与创新，并评估影响：1) 核心结果与结论；2) 创新点与贡献；3) 与已有工作的区别；4) 局限性与未来方向及潜在影响。",
+                question="请总结论文的主要发现与创新：1) 核心结果是什么？2) 主要创新点有哪些？3) 对领域的影响如何？",
                 importance=4,
-                description="发现、创新、局限与影响（合并）",
+                description="主要发现与创新点",
+                domain="both"
+            ),
+            PaperQuestion(
+                id="ppt_md_summary",
+                question=(
+                    "请输出用于PPT的Markdown极简摘要（仅按如下结构，勿嵌入代码块）：\n\n"
+                    "# 总述（1 行）\n"
+                    "- 用一句话概括论文做了什么、为何有效\n\n"
+                    "# 核心要点（3-5条）\n"
+                    "- 关键输入/方法/输出/创新（每条 ≤ 16 字）\n\n"
+                    "# 应用与效果（≤ 3 条，可省略）\n"
+                    "- 场景/指标/收益"
+                ),
+                importance=3,
+                description="PPT 用极简Markdown摘要",
                 domain="both"
             ),
             PaperQuestion(
                 id="worth_reading_judgment",
-                question="请综合评估这篇论文是否值得精读，并从多个角度给出判断依据：1) **创新性与重要性**：论文的研究是否具有开创性？是否解决了领域内的关键问题？2) **方法可靠性**：研究方法是否严谨、可靠？实验设计是否合理？3) **论述清晰度**：论文的写作风格、图表质量和逻辑结构是否清晰易懂？4) **潜在影响**：研究成果是否可能对学术界或工业界产生较大影响？5) **综合建议**：结合以上几点，给出\"强烈推荐\"、\"推荐\"、\"一般\"或\"不推荐\"的最终评级，并简要说明理由。",
-                importance=2,
+                question="请综合评估这篇论文是否值得精读，并给出明确的推荐等级：\n1) **创新性**：是否具有开创性贡献？\n2) **可靠性**：研究方法是否严谨？\n3) **影响力**：是否可能产生重要影响？\n4) **综合建议**：给出\"强烈推荐\"、\"推荐\"、\"一般\"或\"不推荐\"的评级，并简要说明理由。",
+                importance=5,
                 description="是否值得精读",
                 domain="both"
             ),
@@ -143,135 +153,36 @@ class UnifiedBatchPaperAnalyzer:
                 importance=1,
                 description="论文二级分类归属",
                 domain="both"
-            ),              
-            PaperQuestion(
-                id="core_algorithm_flowcharts",
-                question=(
-                    "请基于论文内容，绘制论文核心算法或核心思路的流程图，若论文包含多个相对独立的模块或阶段，请分别给出多个流程图。\n\n"
-                    "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
-                    "2) 推荐使用 flowchart TD ，节点需概括关键步骤/子模块，包含主要数据流与关键分支/判定；\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：训练阶段；\n"
-                    "4) 仅聚焦核心逻辑，避免过度细节；\n"
-                    "5) 若只有单一核心流程，仅输出一个流程图；\n"
-                    "6) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
-                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
-                    "7) 示例：\n"
-                    "```mermaid\n"
-                    "flowchart TD\n"
-                    "    A[\"输入\"] --> B(\"处理\")\n"
-                    "    B --> C{\"是否满足条件\"}\n"
-                    "    C --> D[\"输出1\"]\n"
-                    "    C --> |\"否\"| E[\"输出2\"]\n"
-                    "```"
-                ),
-                importance=5,
-                description="核心算法/思路流程图（Mermaid）",
-                domain="both"
-            ),
-            PaperQuestion(
-                id="core_idea_ppt_md",
-                question=(
-                    "请生成一份用于 PPT 的'论文核心思路与算法'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
-                    "输出格式要求（严格遵守）：\n"
-                    "# 总述（1 行）\n"
-                    "- 用最简一句话概括论文做了什么、为何有效。\n\n"
-                    "# 模块要点（与流程图对应）\n"
-                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'图解要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支。\n"
-                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'图解要点'。\n\n"
-                    "# 关键算法摘要（5-8 条）\n"
-                    "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景。\n\n"
-                    "# 应用与效果（≤ 3 条，可省略）\n"
-                    "- 场景/指标/收益。\n\n"
-                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
-                ),
-                importance=5,
-                description="PPT 用核心思路与算法（Markdown 极简版）",
-                domain="both"
             ),
             
-            # RF IC专用问题 - 完全照搬 batch_rf_ic_reading.py
+            # RF IC专用速读问题（简化版）
             PaperQuestion(
                 id="rf_ic_design_and_metrics",
-                question="请从设计与指标综合分析RF IC：1) 电路架构与拓扑；2) 关键模块与设计思路；3) 工艺/版图/校准要点；4) 主要性能指标与同类对比；5) 设计约束（功耗/面积/成本）。",
-                importance=5,
-                description="RF IC 设计、工艺与性能（合并）",
+                question="请简要分析RF IC论文的技术要点：1) 电路架构特点是什么？2) 主要性能指标如何？3) 设计创新点在哪里？",
+                importance=4,
+                description="RF IC技术要点概述",
                 domain="rf_ic"
             ),
             PaperQuestion(
                 id="rf_ic_applications_challenges_future",
-                question="请评估RF IC的应用与前景：1) 目标场景与市场定位；2) 主要技术难点与创新方案；3) 产业化成熟度与差异化；4) 未来发展趋势与改进方向。",
-                importance=4,
-                description="RF IC 应用、挑战与未来（合并）",
+                question="请评估RF IC论文的应用价值：1) 目标应用场景是什么？2) 技术难点在哪里？3) 产业化前景如何？",
+                importance=3,
+                description="RF IC应用与前景评估",
                 domain="rf_ic"
             ),
             PaperQuestion(
-                id="rf_ic_category_assignment",
+                id="rf_ic_ppt_md_summary",
                 question=(
-                    "请根据论文内容，判断其最准确的二级分类归属。\n\n"
-                    "当前分类树如下（一级 -> 二级）：\n"
-                    f"{self.category_prompt_str}\n\n"
-                    "要求：\n"
-                    "1) 若完全匹配现有二级分类，直接回答：\n"
-                    "   归属：<一级类别> -> <二级子分类>\n"
-                    "2) 若需新建二级分类，回答：\n"
-                    "   新增二级：<一级类别> -> <新子分类名>\n"
-                    "3) 若需新建一级类别，回答：\n"
-                    "   新增一级：<新一级类别> -> [<子分类1>, <子分类2>, ...]\n"
-                    "4) 用一句话说明判断理由。"
-                ),
-                importance=1,
-                description="论文二级分类归属",
-                domain="both"
-            ),      
-
-            PaperQuestion(
-                id="rf_ic_circuit_flowcharts",
-                question=(
-                    "请基于RF IC论文内容，绘制核心电路架构或系统级设计流程图，若论文包含多个相对独立的电路模块或设计阶段，请分别给出多个流程图。\n\n"
-                    "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束；\n"
-                    "2) 推荐使用 flowchart TD ，节点需概括关键电路模块/设计步骤，包含主要信号流与关键控制/判定；\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：射频前端电路；\n"
-                    "4) 仅聚焦核心电路逻辑，避免过度细节；\n"
-                    "5) 若只有单一核心电路，仅输出一个流程图；\n"
-                    "6) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")；\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格；\n"
-                    "   - 根据逻辑选择 flowchart TD（从上到下）。\n"
-                    "7) RF IC专用示例：\n"
-                    "```mermaid\n"
-                    "flowchart TD\n"
-                    "    A[\"射频输入\"] --> B(\"LNA\")\n"
-                    "    B --> C{\"混频器\"}\n"
-                    "    C --> D[\"中频输出\"]\n"
-                    "    C --> |\"本振信号\"| E[\"VCO\"]\n"
-                    "```"
-                ),
-                importance=5,
-                description="RF IC核心电路架构流程图（Mermaid）",
-                domain="rf_ic"
-            ),
-            PaperQuestion(
-                id="rf_ic_ppt_md",
-                question=(
-                    "请生成一份用于 PPT 的'RF IC核心电路与设计思路'极简 Markdown 摘要，并与已生成的 Mermaid 流程图形成配套说明。\n\n"
-                    "输出格式要求（严格遵守）：\n"
+                    "请输出用于PPT的RF IC方向Markdown极简摘要（仅按如下结构，勿嵌入代码块）：\n\n"
                     "# 总述（1 行）\n"
-                    "- 用最简一句话概括RF IC论文做了什么、为何有效。\n\n"
-                    "# 电路模块要点（与流程图对应）\n"
-                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'电路要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键信号流。\n"
-                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'电路要点'。\n\n"
-                    "# 关键设计摘要（5-8 条）\n"
-                    "- 每条 ≤ 16 字，聚焦输入/电路/输出/创新，不写背景。\n\n"
-                    "# 性能与效果（≤ 3 条，可省略）\n"
-                    "- 指标/应用/收益。\n\n"
-                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身。"
+                    "- 用一句话概括该电路/系统做了什么、为何有效\n\n"
+                    "# 电路/设计要点（3-5条）\n"
+                    "- 核心模块/信号流/关键设计\n\n"
+                    "# 性能与应用\n"
+                    "- 指标/场景/收益"
                 ),
-                importance=5,
-                description="PPT 用RF IC核心电路与设计思路（Markdown 极简版）",
+                importance=3,
+                description="RF IC PPT 用极简Markdown摘要",
                 domain="rf_ic"
             ),
         ]
@@ -329,10 +240,10 @@ class UnifiedBatchPaperAnalyzer:
     def _get_domain_specific_questions(self) -> List[PaperQuestion]:
         """根据论文领域获取相应的问题列表"""
         if self.paper_domain == "rf_ic":
-            # RF IC论文：包含通用问题 + RF IC专用问题（包括分类问题）
+            # RF IC论文：包含RF IC专用问题和核心通用问题
             return [q for q in self.questions if q.domain in ["both", "rf_ic"]]
         else:
-            # 通用论文：只包含通用问题（包括分类问题）
+            # 通用论文：只包含通用问题
             return [q for q in self.questions if q.domain in ["both", "general"]]
 
     def _get_domain_specific_system_prompt(self) -> str:
@@ -345,19 +256,13 @@ class UnifiedBatchPaperAnalyzer:
     def _get_domain_specific_analysis_prompt(self, question: PaperQuestion) -> str:
         """根据论文领域和问题生成相应的分析提示"""
         if self.paper_domain == "rf_ic":
-            return f"""请基于已记住的射频集成电路论文全文，从RF IC专业角度回答问题：
+            return f"""请基于已记住的射频集成电路论文全文，从RF IC专业角度简要回答：
 
 问题：{question.question}
 
-请从以下角度进行分析：
-1. 技术深度：深入分析电路设计原理和技术细节
-2. 工程价值：评估技术的实用性和产业化前景
-3. 创新性：识别技术突破和创新点
-4. 行业影响：分析对RF IC行业发展的意义
-
-请保持专业性和技术准确性，使用RF IC领域的专业术语。"""
+请保持简洁明了，重点关注技术创新点和应用价值。"""
         else:
-            return f"请基于已记住的论文全文回答：{question.question}"
+            return f"请基于已记住的论文全文简要回答：{question.question}"
 
     # ---------- 关键词库工具（与 Batch_Paper_Reading 保持一致） ----------
     def _get_keywords_db_path(self) -> str:
@@ -375,12 +280,9 @@ class UnifiedBatchPaperAnalyzer:
 
     def _save_keywords_db(self, keywords: List[str]):
         path = self._get_keywords_db_path()
-        try:
-            with open(path, 'w', encoding='utf-8') as f:
-                for kw in sorted(set(keywords), key=lambda x: x.lower()):
-                    f.write(kw + '\n')
-        except Exception:
-            pass
+        with open(path, 'w', encoding='utf-8') as f:
+            for kw in sorted(set(keywords), key=lambda x: x.lower()):
+                f.write(kw + '\n')
 
     def _normalize_keyword(self, kw: str) -> str:
         kw = kw.strip()
@@ -504,8 +406,7 @@ class UnifiedBatchPaperAnalyzer:
                 "year: [年份, None]\n"
                 "source_code: [源码链接, None]\n"
                 "read_status: [已阅读, 未阅读]\n"
-                "stars: [⭐⭐⭐⭐⭐, ⭐⭐⭐⭐, ⭐⭐⭐, ⭐⭐, ⭐]\n"
-                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。默认stars为⭐⭐⭐，read_status为未阅读。"
+                "仅输出以 --- 开始、以 --- 结束的 YAML Front Matter，不要附加其他文本。read_status默认未阅读。"
             )
 
             yaml_str = yield from request_gpt_model_in_new_thread_with_ui_alive(
@@ -544,44 +445,27 @@ class UnifiedBatchPaperAnalyzer:
                 except Exception:
                     pass
                 
-                # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失再回退到默认
+                # 简化星级评分映射（速读版）：先移除已有 stars，再按评级追加一次
                 try:
-                    level = None
-                    reading_recommendation = None
-                    try:
-                        judge = self.results.get("worth_reading_judgment", "")
-                        if isinstance(judge, str) and judge:
-                            if "强烈推荐" in judge:
-                                level = "强烈推荐"
-                                reading_recommendation = "强烈推荐精读"
-                            elif "不推荐" in judge:
-                                level = "不推荐"
-                                reading_recommendation = "不推荐精读"
-                            elif "谨慎" in judge:
-                                level = "谨慎"
-                                reading_recommendation = "谨慎精读"
-                            elif "一般" in judge:
-                                level = "一般"
-                                reading_recommendation = "一般"
-                            elif "推荐" in judge:
-                                level = "推荐"
-                                reading_recommendation = "推荐精读"
-                    except Exception:
-                        pass
-                    if not level:
-                        # 兜底：维持原默认
-                        level = "一般"
-                    if not reading_recommendation:
-                        # 兜底：根据重要程度推断是否精读
-                        if level in ["强烈推荐", "推荐"]:
-                            reading_recommendation = "推荐精读"
-                        elif level == "不推荐":
-                            reading_recommendation = "不推荐精读"
-                        else:
-                            reading_recommendation = "一般"
-                    
+                    judge = self.results.get("worth_reading_judgment", "")
+                    stars = "⭐⭐⭐"  # 默认
+                    if isinstance(judge, str) and judge:
+                        if "强烈推荐" in judge:
+                            stars = "⭐⭐⭐⭐⭐"
+                        elif "推荐" in judge:
+                            stars = "⭐⭐⭐⭐"
+                        elif "谨慎" in judge:
+                            stars = "⭐⭐"
+                        elif "不推荐" in judge:
+                            stars = "⭐"
+
+                    # 移除原有的 stars 行（标量或列表形式）
+                    text = re.sub(r"^stars:\s*\[.*?\]\s*$\n?", "", text, flags=re.MULTILINE)
+                    text = re.sub(r"^stars:\s*.*$\n?", "", text, flags=re.MULTILINE)
+
+                    # 统一仅追加一次列表形式的 stars 字段
                     if text.endswith("---"):
-                        text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
+                        text = text[:-3].rstrip() + f"\nstars: [\"{stars}\"]\n---"
                 except Exception:
                     pass
                 
@@ -660,11 +544,8 @@ class UnifiedBatchPaperAnalyzer:
             if response:
                 self.results[question.id] = response
                 # 记录本轮交互的输入与输出用于token估算
-                try:
-                    self._token_inputs.append(prompt)
-                    self._token_outputs.append(response)
-                except Exception:
-                    pass
+                self._token_inputs.append(prompt)
+                self._token_outputs.append(response)
 
                 # 如果是分类归属问题，自动更新 paper.json
                 if question.id == "category_assignment":
@@ -685,48 +566,58 @@ class UnifiedBatchPaperAnalyzer:
             return False
 
     def _generate_summary(self) -> Generator:
-        """生成最终总结报告"""
-        domain_label = "RF IC专业" if self.paper_domain == "rf_ic" else "通用"
-        self.chatbot.append(["生成报告", f"正在整合{domain_label}分析结果，生成最终报告..."])
+        """生成速读筛选报告"""
+        domain_label = "RF IC" if self.paper_domain == "rf_ic" else "通用"
+        self.chatbot.append(["生成速读报告", f"正在整合{domain_label}论文速读分析结果，生成筛选报告..."])
         yield from update_ui(chatbot=self.chatbot, history=self.history)
 
         if self.paper_domain == "rf_ic":
-            summary_prompt = """请基于以下对RF IC论文的各个方面的专业分析，生成一份全面的射频集成电路论文解读报告。
+            summary_prompt = """请基于以下对RF IC论文的速读分析，生成一份简洁的论文筛选报告。
 
 报告要求：
-1. 突出RF IC技术特点和创新点
-2. 强调电路设计的技术价值
-3. 分析市场应用前景
-4. 评估技术成熟度
-5. 提供行业发展趋势洞察
+1. 简明扼要地总结论文的核心技术要点
+2. 突出RF IC设计的创新点和价值
+3. 评估技术的应用前景和成熟度
+4. 明确给出是否值得精读的建议及理由
 
-请保持专业性和技术深度，适合RF IC工程师和研究人员阅读。"""
+请保持简洁明了，适合快速决策。"""
         else:
-            summary_prompt = "请基于以下对论文的各个方面的分析，生成一份全面的论文解读报告。报告应该简明扼要地呈现论文的关键内容，并保持逻辑连贯性。"
+            summary_prompt = """请基于以下对论文的速读分析，生成一份简洁的论文筛选报告。
+
+报告要求：
+1. 简明扼要地总结论文的核心内容
+2. 突出研究的主要创新点和贡献
+3. 评估研究的价值和影响
+4. 明确给出是否值得精读的建议及理由
+
+请保持简洁明了，适合快速决策。"""
 
         for q in self.questions:
             if q.id in self.results:
-                summary_prompt += f"\n\n关于{q.description}的分析:\n{self.results[q.id]}"
+                summary_prompt += f"\n\n{q.description}:\n{self.results[q.id]}"
 
         try:
             # 使用单线程版本的请求函数，可以在前端实时显示生成结果
             response = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=summary_prompt,
-                inputs_show_user=f"生成{domain_label}论文解读报告",
+                inputs_show_user=f"生成{domain_label}论文速读筛选报告",
                 llm_kwargs=self.llm_kwargs,
                 chatbot=self.chatbot,
                 history=[],
-                sys_prompt=f"你是一个{'射频集成电路领域的资深专家' if self.paper_domain == 'rf_ic' else '科研论文解读专家'}，请将多个方面的{'专业' if self.paper_domain == 'rf_ic' else ''}分析整合为一份完整、{'深入、专业的RF IC论文解读报告' if self.paper_domain == 'rf_ic' else '连贯、有条理的报告'}。报告应当{'突出技术深度，体现工程价值，并对行业发展趋势提供专业洞察' if self.paper_domain == 'rf_ic' else '重点突出，层次分明，并且保持学术性和客观性'}。若分析中包含 Mermaid 代码块（```mermaid ...```），请原样保留，不要改写为其他格式。{'对于RF IC论文，特别关注电路架构、信号流和设计思路的可视化表达。' if self.paper_domain == 'rf_ic' else ''}"
+                sys_prompt=f"你是一个{'射频集成电路领域的专家' if self.paper_domain == 'rf_ic' else '科研论文评审专家'}，请将速读分析整合为一份简洁的筛选报告。报告应当重点突出论文的核心价值和创新点，并明确给出是否值得精读的建议。保持简洁明了，便于快速决策。"
             )
 
             if response:
+                # 记录报告生成的token使用
+                self._token_inputs.append(summary_prompt)
+                self._token_outputs.append(response)
                 return response
-            return "报告生成失败"
+            return "速读报告生成失败"
 
         except Exception as e:
-            self.chatbot.append(["错误", f"生成报告时出错: {str(e)}"])
+            self.chatbot.append(["错误", f"生成速读报告时出错: {str(e)}"])
             yield from update_ui(chatbot=self.chatbot, history=self.history)
-            return "报告生成失败: " + str(e)
+            return "速读报告生成失败: " + str(e)
 
     def save_report(self, report: str, paper_file_path: str = None) -> str:
         """保存分析报告，返回保存的文件路径"""
@@ -748,25 +639,52 @@ class UnifiedBatchPaperAnalyzer:
         try:
             md_parts = []
             # 标题与整体报告（稍后在前加入 YAML 头）
-            domain_title = "射频集成电路论文专业解读报告" if self.paper_domain == "rf_ic" else "论文快速解读报告"
+            domain_title = "射频集成电路论文速读筛选报告" if self.paper_domain == "rf_ic" else "学术论文速读筛选报告"
             md_parts.append(f"{domain_title}\n\n{report}")
 
-            # 优先写入：PPT 极简摘要（若有）
-            if "core_idea_ppt_md" in self.results:
-                md_parts.append(f"\n\n## PPT 摘要\n\n{self.results['core_idea_ppt_md']}")
-            elif "rf_ic_ppt_md" in self.results:
-                md_parts.append(f"\n\n## RF IC PPT 摘要\n\n{self.results['rf_ic_ppt_md']}")
+            # 速读报告：简洁组织内容，重点关注筛选决策
+            if self.paper_domain == "rf_ic":
+                # RF IC论文速读：按重要性组织
+                # 1. 核心分析
+                core_questions = ["research_methods_and_data", "findings_innovations_and_impact", "rf_ic_design_and_metrics", "rf_ic_applications_challenges_future"]
+                for q_id in core_questions:
+                    for q in self.questions:
+                        if q.id == q_id and q.id in self.results:
+                            md_parts.append(f"\n\n## 📋 {q.description}\n\n{self.results[q.id]}")
+                            break
+                
+                # 2. 阅读建议（最重要）
+                if "worth_reading_judgment" in self.results:
+                    md_parts.append(f"\n\n## 🎯 是否值得精读\n\n{self.results['worth_reading_judgment']}")
+                
+                # 3. 分类信息
+                if "category_assignment" in self.results:
+                    md_parts.append(f"\n\n## 📂 论文分类\n\n{self.results['category_assignment']}")
 
-            # 其次写入：核心流程图（Mermaid）（若有，保持代码块原样）
-            if "core_algorithm_flowcharts" in self.results:
-                md_parts.append(f"\n\n## 核心流程图\n\n{self.results['core_algorithm_flowcharts']}")
-            elif "rf_ic_circuit_flowcharts" in self.results:
-                md_parts.append(f"\n\n## RF IC 核心电路流程图\n\n{self.results['rf_ic_circuit_flowcharts']}")
+                # 4. PPT 摘要
+                if "rf_ic_ppt_md_summary" in self.results:
+                    md_parts.append(f"\n\n## 📝 RF IC PPT 摘要\n\n{self.results['rf_ic_ppt_md_summary']}")
+            else:
+                # 通用论文速读：按重要性组织
+                # 1. 核心分析
+                core_questions = ["research_methods_and_data", "findings_innovations_and_impact"]
+                for q_id in core_questions:
+                    for q in self.questions:
+                        if q.id == q_id and q.id in self.results:
+                            md_parts.append(f"\n\n## 📋 {q.description}\n\n{self.results[q.id]}")
+                            break
+                
+                # 2. 阅读建议（最重要）
+                if "worth_reading_judgment" in self.results:
+                    md_parts.append(f"\n\n## 🎯 是否值得精读\n\n{self.results['worth_reading_judgment']}")
+                
+                # 3. 分类信息
+                if "category_assignment" in self.results:
+                    md_parts.append(f"\n\n## 📂 论文分类\n\n{self.results['category_assignment']}")
 
-            # 其余分析项按问题列表顺序写入，但跳过已写入的四个
-            for q in self.questions:
-                if q.id in self.results and q.id not in {"core_idea_ppt_md", "core_algorithm_flowcharts", "rf_ic_ppt_md", "rf_ic_circuit_flowcharts"}:
-                    md_parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
+                # 4. PPT 摘要
+                if "ppt_md_summary" in self.results:
+                    md_parts.append(f"\n\n## 📝 PPT 摘要\n\n{self.results['ppt_md_summary']}")
 
             md_content = "".join(md_parts)
 
@@ -774,35 +692,15 @@ class UnifiedBatchPaperAnalyzer:
             if hasattr(self, 'yaml_header') and self.yaml_header:
                 md_content = f"{self.yaml_header}\n\n" + md_content
 
-            # 追加 Token 估算结果
+            # 追加简化的分析统计
             try:
                 stats = estimate_token_usage(self._token_inputs, self._token_outputs, self.llm_kwargs.get('llm_model', 'gpt-3.5-turbo'))
                 if stats and stats.get('sum_total_tokens', 0) > 0:
                     md_content += (
-                        "## Token 估算\n\n"
-                        f"- 模型: {stats.get('model')}\n\n"
-                        f"- 输入 tokens: {stats.get('sum_input_tokens', 0)}\n"
-                        f"- 输出 tokens: {stats.get('sum_output_tokens', 0)}\n"
-                        f"- 总 tokens: {stats.get('sum_total_tokens', 0)}\n\n"
+                        "\n\n## 📊 分析统计\n\n"
+                        f"- 分析模型: {stats.get('model')}\n"
+                        f"- Token消耗: {stats.get('sum_total_tokens', 0)} tokens\n"
                     )
-                # 紧跟 Token 估算后，追加每篇论文处理时间
-                try:
-                    dur = getattr(self, '_processing_seconds', None)
-                    started_at = getattr(self, '_processing_started_at', None)
-                    finished_at = getattr(self, '_processing_finished_at', None)
-                    if dur is not None and dur >= 0:
-                        minutes = int(dur // 60)
-                        seconds = int(dur % 60)
-                        started_str = started_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(started_at, datetime) else 'N/A'
-                        finished_str = finished_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(finished_at, datetime) else 'N/A'
-                        md_content += (
-                            "## 处理时间\n\n"
-                            f"- 开始时间: {started_str}\n"
-                            f"- 结束时间: {finished_str}\n"
-                            f"- 总耗时: {minutes}分{seconds}秒\n\n"
-                        )
-                except Exception:
-                    pass
             except Exception:
                 pass
 
@@ -823,11 +721,9 @@ class UnifiedBatchPaperAnalyzer:
 
     def analyze_paper(self, paper_path: str) -> Generator:
         """分析单篇论文主流程"""
-        # 记录处理开始时间
-        try:
-            self._processing_started_at = datetime.now()
-        except Exception:
-            self._processing_started_at = None
+        # 每篇论文独立统计 token：重置交互记录
+        self._token_inputs = []
+        self._token_outputs = []
         # 加载论文
         success = yield from self._load_paper(paper_path)
         if not success:
@@ -851,14 +747,6 @@ class UnifiedBatchPaperAnalyzer:
 
         # 保存报告
         saved_file = self.save_report(final_report, self.paper_file_path)
-        # 记录处理结束时间及耗时
-        try:
-            self._processing_finished_at = datetime.now()
-            if self._processing_started_at is not None and self._processing_finished_at is not None:
-                self._processing_seconds = (self._processing_finished_at - self._processing_started_at).total_seconds()
-        except Exception:
-            self._processing_finished_at = None
-            self._processing_seconds = None
         
         return saved_file
 
@@ -954,7 +842,7 @@ def 统一批量论文速读(txt: str, llm_kwargs: Dict, plugin_kwargs: Dict, ch
              history: List, system_prompt: str, user_request: str):
     """主函数 - 统一批量论文速读（支持主题分类）"""
     # 初始化分析器
-    chatbot.append(["函数插件功能及使用方式", "统一批量论文速读：智能识别论文主题（通用/RF IC），自动选择最适合的分析策略，为每篇论文生成专业的速读报告。 <br><br>📋 使用方式：<br>1、输入包含多个PDF文件的文件夹路径<br>2、或者输入多个论文ID（DOI或arXiv ID），用逗号分隔<br>3、点击插件开始智能批量分析<br><br>🎯 智能分析特性：<br>- 自动主题分类（通用论文 vs RF IC论文）<br>- 动态调整分析策略和问题集<br>- 专业术语和评估标准<br>- 统一的报告格式和YAML元信息"])
+    chatbot.append(["函数插件功能及使用方式", "统一批量论文速读：快速筛选论文，判断是否值得精读。智能识别论文主题（通用/RF IC），为每篇论文生成简洁的速读报告。 <br><br>📋 使用方式：<br>1、输入包含多个PDF文件的文件夹路径<br>2、或者输入多个论文ID（DOI或arXiv ID），用逗号分隔<br>3、点击插件开始快速筛选分析<br><br>🎯 速读特性：<br>- 快速识别论文核心内容和创新点<br>- 自动主题分类（通用论文 vs RF IC论文）<br>- 明确给出是否值得精读的建议<br>- 简洁的报告格式，便于快速决策"])
     yield from update_ui(chatbot=chatbot, history=history)
 
     paper_files = []

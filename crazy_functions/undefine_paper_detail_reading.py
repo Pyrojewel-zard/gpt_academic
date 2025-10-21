@@ -191,25 +191,7 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             
-            # 第七层：流程图与架构设计
-            DeepReadQuestion(
-                id="flowcharts_and_architecture",
-                description="流程图与架构设计",
-                importance=4,
-                domain="both",
-                question=(
-                    "【第七层：架构可视化】\n"
-                    "基于前面的技术分析，请绘制核心流程图：\n"
-                    "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
-                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称\n"
-                    "4) 格式约束：\n"
-                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
-                    "   - 箭头标签采用 |\"标签名\"| 形式\n"
-                    "5) 重点展示：整体架构、核心算法流程、数据流向、关键决策点"
-                ),
-            ),
+            
             
             # 第八层：影响评估与未来展望
             DeepReadQuestion(
@@ -243,15 +225,64 @@ class BatchPaperDetailAnalyzer:
                 ),
             ),
             
-            # 第九层：执行摘要与要点总结
+            # 第九层：核心算法流程图与架构设计
+            DeepReadQuestion(
+                id="core_algorithm_flowcharts_and_architecture",
+                description="核心算法流程图与架构设计",
+                importance=5,
+                domain="both",
+                question=(
+                    "【第九层：算法可视化】\n"
+                    "基于前面的技术分析，请绘制核心算法或思路的详细流程图：\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
+                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称\n"
+                    "4) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式\n"
+                    "5) 重点展示：整体架构、核心算法流程、数据流向、关键决策点\n"
+                    "6) 若论文包含多个相对独立的模块或阶段，请分别给出多个流程图"
+                ),
+            ),
+            
+            # 第十层：PPT摘要与演示材料
+            DeepReadQuestion(
+                id="ppt_summary_and_presentation_materials",
+                description="PPT摘要与演示材料",
+                importance=4,
+                domain="both",
+                question=(
+                    "【第十层：演示材料】\n"
+                    "基于前面的深入分析，请生成用于 PPT 的'论文核心思路与算法'详细 Markdown 摘要：\n"
+                    "\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括论文做了什么、为何有效\n"
+                    "\n"
+                    "# 模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'图解要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键分支\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'图解要点'\n"
+                    "\n"
+                    "# 关键算法摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/步骤/输出/创新，不写背景\n"
+                    "\n"
+                    "# 应用与效果（≤ 3 条，可省略）\n"
+                    "- 场景/指标/收益\n"
+                    "\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身"
+                ),
+            ),
+            
+            # 第十一层：执行摘要与要点总结
             DeepReadQuestion(
                 id="executive_summary_and_key_points",
                 description="执行摘要与要点总结",
                 importance=5,
                 domain="both",
                 question=(
-                    "【第九层：要点总结】\n"
-                    "基于前面八层的深入分析，请给出精炼的执行摘要：\n"
+                    "【第十一层：要点总结】\n"
+                    "基于前面十层的深入分析，请给出精炼的执行摘要：\n"
                     "格式要求（Markdown，不包含代码）：\n"
                     "## 核心价值\n"
                     "- 一句话概括方法的核心价值\n"
@@ -285,6 +316,65 @@ class BatchPaperDetailAnalyzer:
                     "3) 电路拓扑结构的特点、优势和创新点\n"
                     "4) 整体芯片的层次化设计思路和关键设计决策\n"
                     "5) 与现有RF IC架构的本质区别和技术突破"
+                ),
+            ),
+            
+            # RF IC专用流程图
+            DeepReadQuestion(
+                id="rf_ic_circuit_flowcharts",
+                description="RF IC核心电路架构流程图",
+                importance=5,
+                domain="rf_ic",
+                question=(
+                    "【RF IC电路可视化】\n"
+                    "基于前面的RF IC技术分析，请绘制核心电路架构或系统级设计流程图：\n"
+                    "\n"
+                    "要求：\n"
+                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
+                    "2) 推荐使用 flowchart TD ，节点需概括关键电路模块/设计步骤，包含主要信号流与关键控制/判定\n"
+                    "3) 每个流程图前以一句话标明模块/阶段名称，例如：模块：射频前端电路\n"
+                    "4) 仅聚焦核心电路逻辑，避免过度细节\n"
+                    "5) 若只有单一核心电路，仅输出一个流程图\n"
+                    "6) 格式约束：\n"
+                    "   - 节点名用引号包裹，如 [\"节点名\"] 或 (\"节点名\")\n"
+                    "   - 箭头标签采用 |\"标签名\"| 形式，且 | 与 \" 之间不要有空格\n"
+                    "   - 根据逻辑选择 flowchart TD（从上到下）\n"
+                    "7) RF IC专用示例：\n"
+                    "```mermaid\n"
+                    "flowchart TD\n"
+                    "    A[\"射频输入\"] --> B(\"LNA\")\n"
+                    "    B --> C{\"混频器\"}\n"
+                    "    C --> D[\"中频输出\"]\n"
+                    "    C --> |\"本振信号\"| E[\"VCO\"]\n"
+                    "```"
+                ),
+            ),
+            
+            # RF IC专用PPT摘要
+            DeepReadQuestion(
+                id="rf_ic_ppt_md",
+                description="RF IC PPT摘要与演示材料",
+                importance=4,
+                domain="rf_ic",
+                question=(
+                    "【RF IC演示材料】\n"
+                    "基于前面的RF IC深入分析，请生成用于 PPT 的'RF IC核心电路与设计思路'详细 Markdown 摘要：\n"
+                    "\n"
+                    "输出格式要求（严格遵守）：\n"
+                    "# 总述（1 行）\n"
+                    "- 用最简一句话概括RF IC论文做了什么、为何有效\n"
+                    "\n"
+                    "# 电路模块要点（与流程图对应）\n"
+                    "- 若存在多个流程图/模块：按\"模块：名称\"分组，每组列出 3-5 条'电路要点'，每条 ≤ 14 字，概括核心输入→处理→输出与关键信号流\n"
+                    "- 若仅有一个流程图：仅输出该流程图的 3-5 条'电路要点'\n"
+                    "\n"
+                    "# 关键设计摘要（5-8 条）\n"
+                    "- 每条 ≤ 16 字，聚焦输入/电路/输出/创新，不写背景\n"
+                    "\n"
+                    "# 性能与效果（≤ 3 条，可省略）\n"
+                    "- 指标/应用/收益\n"
+                    "\n"
+                    "注意：仅输出上述 Markdown 结构，不嵌入代码，不重复流程图本身"
                 ),
             ),
             
@@ -426,10 +516,11 @@ class BatchPaperDetailAnalyzer:
     def _get_domain_specific_questions(self) -> List[DeepReadQuestion]:
         """根据论文领域获取相应的问题列表"""
         if self.paper_domain == "rf_ic":
-            # RF IC论文：包含通用问题 + RF IC专用问题
-            return [q for q in self.questions if q.domain in ["both", "rf_ic"]]
+            # RF IC论文：包含RF IC专用问题和核心通用问题，排除通用问题中的核心算法流程图和PPT摘要（因为RF IC有专门的版本）
+            excluded_ids = {"core_algorithm_flowcharts_and_architecture", "ppt_summary_and_presentation_materials"}
+            return [q for q in self.questions if q.domain == "rf_ic" or (q.domain == "both" and q.id not in excluded_ids)]
         else:
-            # 通用论文：只包含通用问题
+            # 通用论文：只包含通用问题，排除RF IC专用问题
             return [q for q in self.questions if q.domain in ["both", "general"]]
 
     def _get_domain_specific_system_prompt(self) -> str:
@@ -725,57 +816,43 @@ class BatchPaperDetailAnalyzer:
                             text = text[:-3].rstrip() + f"\nsecondary_category: \"{escaped}\"\n---"
                 except Exception:
                     pass
-                # 基于 worth_reading_judgment 提取中文"论文重要程度"和"是否精读"，若缺失回退默认
+                # 基于 worth_reading_judgment 建立统一的精读建议→星级评分映射
                 try:
-                    level = None
-                    reading_recommendation = None
-                    level_to_stars = {
-                        "强烈推荐": "⭐⭐⭐⭐⭐",
-                        "推荐": "⭐⭐⭐⭐",
-                        "一般": "⭐⭐⭐",
-                        "谨慎": "⭐⭐",
-                        "不推荐": "⭐",
+                    # 定义精读建议到星级评分的唯一映射关系
+                    reading_to_stars_mapping = {
+                        "强烈推荐": {"level": "强烈推荐", "stars": "⭐⭐⭐⭐⭐", "reading": "强烈推荐精读"},
+                        "推荐": {"level": "推荐", "stars": "⭐⭐⭐⭐", "reading": "推荐精读"},
+                        "一般": {"level": "一般", "stars": "⭐⭐⭐", "reading": "一般"},
+                        "谨慎": {"level": "谨慎", "stars": "⭐⭐", "reading": "谨慎精读"},
+                        "不推荐": {"level": "不推荐", "stars": "⭐", "reading": "不推荐精读"}
                     }
-                    try:
-                        judge = self.results.get("worth_reading_judgment", "")
-                        if isinstance(judge, str) and judge:
-                            if "强烈推荐" in judge:
-                                level = "强烈推荐"
-                                reading_recommendation = "强烈推荐精读"
-                            elif "不推荐" in judge:
-                                level = "不推荐"
-                                reading_recommendation = "不推荐精读"
-                            elif "谨慎" in judge:
-                                level = "谨慎"
-                                reading_recommendation = "谨慎精读"
-                            elif "一般" in judge:
-                                level = "一般"
-                                reading_recommendation = "一般"
-                            elif "推荐" in judge:
-                                level = "推荐"
-                                reading_recommendation = "推荐精读"
-                    except Exception:
-                        pass
-                    if not level:
-                        level = "一般"
-                    if not reading_recommendation:
-                        # 兜底：根据重要程度推断是否精读
-                        if level in ["强烈推荐", "推荐"]:
-                            reading_recommendation = "推荐精读"
-                        elif level == "不推荐":
-                            reading_recommendation = "不推荐精读"
-                        else:
-                            reading_recommendation = "一般"
-                    # 仅根据推荐阅读等级映射生成星级：优先就地替换已有 stars 行；若不存在则追加
-                    target_stars = level_to_stars.get(level, "⭐⭐⭐")
+                    
+                    # 从worth_reading_judgment中提取精读建议
+                    judge = self.results.get("worth_reading_judgment", "")
+                    reading_level = "一般"  # 默认值
+                    
+                    if isinstance(judge, str) and judge:
+                        for key in reading_to_stars_mapping.keys():
+                            if key in judge:
+                                reading_level = key
+                                break
+                    
+                    # 获取映射结果
+                    mapping_result = reading_to_stars_mapping[reading_level]
+                    level = mapping_result["level"]
+                    stars = mapping_result["stars"]
+                    reading_recommendation = mapping_result["reading"]
+                    
+                    # 更新YAML中的stars字段
                     if re.search(r"^stars:\s*\[(.*?)\]\s*$", text, flags=re.MULTILINE):
-                        text = re.sub(r"^stars:\s*\[(.*?)\]\s*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
+                        text = re.sub(r"^stars:\s*\[(.*?)\]\s*$", f"stars: [\"{stars}\"]", text, flags=re.MULTILINE)
                     elif re.search(r"^stars:\s*.*$", text, flags=re.MULTILINE):
-                        text = re.sub(r"^stars:\s*.*$", f"stars: [\"{target_stars}\"]", text, flags=re.MULTILINE)
+                        text = re.sub(r"^stars:\s*.*$", f"stars: [\"{stars}\"]", text, flags=re.MULTILINE)
                     else:
                         if text.endswith("---"):
-                            text = text[:-3].rstrip() + f"\nstars: [\"{target_stars}\"]\n---"
+                            text = text[:-3].rstrip() + f"\nstars: [\"{stars}\"]\n---"
                     
+                    # 添加论文重要程度和是否精读字段
                     if text.endswith("---"):
                         text = text[:-3].rstrip() + f"\n论文重要程度: \"{level}\"\n是否精读: \"{reading_recommendation}\"\n---"
                 except Exception:
@@ -907,8 +984,9 @@ class BatchPaperDetailAnalyzer:
             "experimental_validation_and_effectiveness",
             "assumptions_limitations_and_threats",
             "reproduction_guide_and_engineering",
-            "flowcharts_and_architecture",
             "impact_assessment_and_future_directions",
+            "core_algorithm_flowcharts_and_architecture",
+            "ppt_summary_and_presentation_materials",
             "executive_summary_and_key_points"
         ]
         
@@ -920,7 +998,9 @@ class BatchPaperDetailAnalyzer:
                 "rf_ic_performance_metrics_and_constraints",
                 "rf_ic_design_methodology_and_eda",
                 "rf_ic_manufacturing_and_testing",
-                "rf_ic_applications_and_market"
+                "rf_ic_applications_and_market",
+                "rf_ic_circuit_flowcharts",
+                "rf_ic_ppt_md"
             ]
             layer_order.extend(rf_ic_layer_order)
         
@@ -952,6 +1032,15 @@ class BatchPaperDetailAnalyzer:
             history=[],
             sys_prompt=sys_prompt,
         )
+        
+        # 记录报告生成的token使用
+        if resp:
+            try:
+                self._token_inputs.append(prompt)
+                self._token_outputs.append(resp)
+            except Exception:
+                pass
+        
         return resp or "报告生成失败"
 
     def _extract_secondary_category(self, report: str) -> str:
@@ -984,15 +1073,21 @@ class BatchPaperDetailAnalyzer:
         domain_title = "射频集成电路论文专业精读报告" if self.paper_domain == "rf_ic" else "论文精读技术报告"
         parts.append(f"{domain_title}\n\n{report}")
         
-        # 优先追加执行级摘要与流程图
+        # 优先追加执行级摘要、流程图与PPT材料
         if "executive_summary_and_key_points" in self.results:
             parts.append(f"\n\n## 执行级摘要\n\n{self.results['executive_summary_and_key_points']}")
-        if "flowcharts_and_architecture" in self.results:
-            parts.append(f"\n\n## 核心流程图\n\n{self.results['flowcharts_and_architecture']}")
+        if "core_algorithm_flowcharts_and_architecture" in self.results:
+            parts.append(f"\n\n## 核心算法流程图\n\n{self.results['core_algorithm_flowcharts_and_architecture']}")
+        if "ppt_summary_and_presentation_materials" in self.results:
+            parts.append(f"\n\n## PPT演示材料\n\n{self.results['ppt_summary_and_presentation_materials']}")
+        if "rf_ic_circuit_flowcharts" in self.results:
+            parts.append(f"\n\n## RF IC电路架构流程图\n\n{self.results['rf_ic_circuit_flowcharts']}")
+        if "rf_ic_ppt_md" in self.results:
+            parts.append(f"\n\n## RF IC PPT演示材料\n\n{self.results['rf_ic_ppt_md']}")
         
         # 追加其余维度
         for q in self.questions:
-            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "flowcharts_and_architecture"}:
+            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "core_algorithm_flowcharts_and_architecture", "ppt_summary_and_presentation_materials", "rf_ic_circuit_flowcharts", "rf_ic_ppt_md"}:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
         # 追加 Token 估算结果

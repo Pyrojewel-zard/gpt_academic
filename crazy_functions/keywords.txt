@@ -1,0 +1,483 @@
+10-GHz bandwidth chirp
+110–170 GHz
+140 GHz
+140-GHz
+22-nm CMOS FD-SOI
+22-nm fully depleted silicon on insulator (FDSOI)
+22.6–73.9 GHz
+22nm FDSOI
+26.5-29.5GHz
+28-nm bulk CMOS
+39 GHz
+45-nm
+45-nm CMOS silicon-on-insulator (SOI)
+45-nm CMOS SOI
+5G
+5G cellular network
+5G communications
+5G new radio (5G NR)
+5G NR
+5G NR FDD
+5G NR FR2
+60-GHz carrier frequency
+6G
+6G applications
+6G receiver
+79-GHz radar
+Active antenna
+active array
+active electronically scanned array (AESA)
+Active feedforward
+Active phased arrays
+Air-filled coaxial structure
+AlGaAs–InGaAs pHEMT 工艺
+Alias rejection
+alias spreading
+alternative test
+AMI
+Amplifier
+amplitude modulation
+Amplitude-modulated continuous-wave
+amplitude-modulated interferometry
+Analog baseband
+Analog correlator
+Analog photonic link
+Analog predistortion
+Analog-to-digital converter (ADC)
+angle-of-arrival (AoA)
+Angular resolution
+Antenna
+antenna characterization
+antenna-in-packaging (AiP) phased array
+Asymmetric switch network
+Autonomous vehicle (A V)
+back gate
+back gate control
+Balanced amplifier
+band-shifting
+bandpass filter
+bandstop filter
+Bandwidth extension
+Beamformer
+Beamformer integrated circuit (BFIC)
+beamforming
+beamsteering
+Bi-directional
+BiCMOS
+bidirectional amplifier
+Biomedical sensor
+blocker rejection
+blocker suppression
+Blocker-tolerant
+Bluetooth-low energy (BLE)
+body temperature
+breakdown voltage (BV)
+bridged-T coil
+Broadband
+Broadband circuits
+Broadband pulse generation
+broadband transceiver
+built-in self-test
+C-band
+C-band phase shifters
+calibrated notch
+calibration
+Capacitive feedback
+Capacitive loading
+Capacitive loading simultaneous noise and input matching (CLSNIM)
+Capacitive source degeneration (CSD)
+Capacitor assistance
+cascode
+cascode amplifier
+cascoded inverter
+cellular
+cellular transceiver
+ceramic packaging
+channel-selection LNA
+Charge pump
+chipless RFID readers
+Class-B biased bulk-injection (BI) mixer
+clock generation
+CMOS
+CMOS Active Inductor
+CMOS duplexer
+CMOS integrated circuit
+CMOS LNA
+CMOS silicon on isolator (SOI)
+CMOS switch
+CMOS technology
+code-division multiple access
+code-modulated embedded test
+coherent
+coherent detection
+CoMET
+common-gate
+Common-gate (CG)
+Common-source (CS)
+Communication
+complementary metal–oxide–semiconductor (CMOS)
+complementary metal–oxide–semiconductor (CMOS) transceiver (TRX)
+complex poles
+concurrent dual-band
+contactless sensing
+Continuous-mode Class-F−1
+cryogenic CMOS
+cryogenic CMOS LNA
+cryogenic temperatures
+current reuse (CR)
+current-reuse
+current-sharing low-noise amplifier (LNA)
+D-band
+D-band LNA
+D-band radar
+dc Kerr effect
+DC offset
+digital frequency demodulation
+direct-conversion receiver
+discrete-time finite impulse response (FIR)
+distortion analysis
+distributed amplifier
+distributed driver
+divider
+downconverter
+driver
+dual-band
+dual-beam
+Dual-mode
+dual-polarized
+E- and W-bands
+E-band
+edge healthcare
+effective isotropic radiated power (EIRP)
+electro magnetic
+electromagnetic interference (EMI)
+Equalizer
+error vector magnitude (EVM)
+FD-silicon-on-insulator (SOI) CMOS
+FDSOI CMOS
+feedback
+feedforward blocker cancellation
+feedforward cancellation
+FEM-less
+fifth generation (5G)
+filter
+FinFET
+Flat Gain
+Flip-chip
+FMCW
+FMCW sensing
+forward body bias (FBB)
+four receivers (4RXs)
+four transmitters (4TXs)
+four-phase power divider
+fractional-N phase-locked loop
+frequency demodulation
+frequency division duplex (FDD)
+frequency range 3 (FR3)
+frequency-modulated continuous wave (FMCW)
+frequency-offset self-injection-locked radar
+frequency-offset technique
+Frequency-selective gain equalization technique
+front end
+Front end (FE)
+front-end module (FEM)
+full-duplex
+full-metal antenna
+fully depleted silicon-on-insulator (FDSOI) CMOS
+fully differential RF/millimeter-wave (mm-wave) switch
+gain-boosting
+gain-to-noise temperature (G/T)
+galvanoformung and abformung (UV-LIGA) technology
+Gate–drain capacitance feedback
+gesture recognition
+GF 22FDX
+glass
+gm-boost
+gm-boosting
+gm3 cancellation
+Gmax
+gold band
+heterojunction bipolar transistor (HBT)
+high efficiency
+high power
+high-gain
+high-isolation RF switch
+high-k
+high-Q inductor
+high-Q ON-chip inductor
+high-Q RF filter
+hybrid integration
+I/Q mismatch calibration
+I/Q receiver
+IEEE 802.15.4
+IIP2 calibration-free
+image rejection
+impulse radio
+impulse radio ultrawideband (IR-UWB)
+indium phosphide (InP)
+inductance-mutation
+Inductive loading SNIM (ILSNIM)
+injection-locking-based local oscillator (LO) generator
+Input matching
+input third-order intercept point (IIP3)
+input-referred second-order intercept point (IIP2)
+integrated circuits (ICs)
+integrated sensing and communications
+integration
+interference
+interference rejection
+interference suppression
+interferer rejection (IR)
+interferometry
+intermodulation
+inverter-based
+inverter-based low-noise amplifier (LNA)
+isolation improvement
+K/Ka-band
+Ka-band
+Ku-band
+Ku-band satellite communications
+large array
+leakage neutralization
+lidar
+linear
+linearity
+linearity analysis
+linearization
+link budgeting
+LNA
+LO feedthrough (LOFT)
+local oscillator (LO)
+local-oscillator (LO) phase shifting
+lossless RF feedback
+Low and flat noise figure (NF)
+low impedance
+low intermediate frequency (IF)
+low noise figure
+low-noise amplifier
+low-noise amplifier (LNA)
+low-power
+Low-power LNA
+low-power radar transceiver
+low-power receiver
+Mach–Zehnder modulator (MZM)
+Magnetically coupled resonator (MCR)
+magnetic–electric hybrid coupling
+matching network reuse
+maximum achievable gain (Gmax)
+microwave
+microwave dielectric spectroscopy
+microwave photonics
+Millimeter wave (mm wave)
+millimeter-wave
+millimeter-wave (mm-wave) transformer
+millimeter-Wave (mmW)
+millimeter-wave integrated circuits
+millimeter-wave radar
+millimeter-wave wideband radio receivers
+MIMO techniques
+mixer-first
+mixer-reused technique
+mixers
+mm-wave
+mm-wave low-noise amplifier (LNA)
+modulation
+monostatic radar
+multi-band low-noise ampliﬁer (LNA)
+multi-gated transistors (MGTRs)
+multi-objective optimization
+multi-satellite reception
+multiband transceiver
+multidimensional sensing
+Multistage noise matching
+N-path filter
+near-field probe
+negative resistance
+neutralization
+new radio (NR)
+Noise figure (NF)
+noise matching
+noise reduction
+noise-canceling
+Noise-canceling (NC)
+non-uniform sub-sampling (NUSS)
+noncontact monitoring
+noncontact vital sign monitoring
+notch
+notch filter
+NR-U
+on-chip antennas
+on-chip implementation
+optical communication
+optical heterodyning
+optical links
+optoelectronics
+orthogonal frequency-division multiplexing (OFDM)
+partial distortion canceling
+patch antenna
+permittivity
+phase analysis
+phase calibration
+phase error correction
+phase noise (PN)
+phase quantization
+phase shifter
+phase shifter (PS)
+phase-frequency detector (PFD)
+phase-invariant
+phase-locked loop (PLL)
+phased array
+phased array calibration
+phased-array antennas (PAAs)
+phased-array transceiver
+plasma dispersion
+pMOS–nMOS configuration
+polyphase power divider
+power amplifier
+power amplifier (PA)
+power amplifier-low-noise amplifier (PA-LNA)
+Power constrained SNIM (PCSNIM)
+printed circuit board (PCB)
+programmable delay element
+programmable gain amplifier
+programmable silicon photonic filters
+pulsed
+pulsed chirping
+Quadrature amplitude modulation (QAM)
+quadrature coupler
+Quality Factor
+quantum computing
+quartz
+qubit readout
+radar
+radar countermeasures
+radar system
+radio frequency (RF)
+radio frequency (RF) filtering low-noise amplifier (LNA)
+radio-over-fiber (RoF)
+radiometry
+receiver
+receiver (RX)
+reconfigurable
+reconfigurable filter
+reconfigurable microwave component
+reconfigurable radio frequency
+reconﬁgurable coupler
+resistive feedback
+resonant feedback compensation equalization (RFCE)
+return loss
+RF integrated circuit
+RF photonics
+RFSOI
+RX
+Satcom-On-The-Move (SOTM)
+satellite communication
+satellite communication (SATCOM)
+SAW-less receiver
+scalar
+second-order
+segmented MZM
+self-injection-locked (SIL) radar
+self-interference cancellation
+sensor
+shorted stubs
+SiGe
+SiGe BiCMOS
+SiGe BiCMOS technology
+silicon beamformer
+silicon photonics
+silicon photonics (SiP)
+silicon–germanium (SiGe)
+Simultaneous noise and input matching (SNIM)
+single-channel transceivers
+single-pole
+single-sideband (SSB) mixer
+single-throw (SPST)
+single-to-differential (S2D)
+SiPh integration
+sliding IF
+software-defined radio
+sp)
+SPDT switch
+specific on-resistance (Ron
+spillover attenuation
+spooﬁng
+spurious-free dynamic range
+stability
+stepped-frequency carrier
+sub-sampling
+sub-terahertz (subTHz)
+sub-THz
+subharmonic mixer (SHM)
+subthreshold
+superconducting qubit readout
+superconducting single-photon detectors
+switched-capacitor
+symmetric matching network
+synergistic equalization
+synthetic aperture radar (SAR)
+T/R switching
+telemedicine
+terahertz (THz)
+thermal
+third-order intermodulation (IM3)
+time domain (TD)
+time skew
+time-of-flight
+timing jitter
+total radiation efficiency (TRE)
+transceiver
+transceiver (TRX)
+transformer
+Transformer-based notch filter
+transformer-loaded
+transmission line
+transmission zero
+transmit/receive (TX/RX) antenna sharing
+transmitter
+Transmitter (TX)
+transmitter (TX) leakage rejection
+tri-coupled transformer
+triple-path and dual-path noise canceling (NC)
+true-time delay
+TRX switch
+tunable bandwidth
+tunable matching network
+two-step design fashion
+ultra-wideband
+ultralow voltage/power
+ultralow-noise ﬁgure (NF)
+ultralow-power wireless
+ultraviolet lithographie
+ultrawideband (UWB)
+ultrawideband transceiver
+Unconditional stability
+UWB
+UWB System
+variable gain
+Variable-gain low-noise amplifier (VG-LNA)
+Variation of lateral width (VLW)
+vector compensation
+vehicle safety
+vital sign
+vital signs detection
+Vivaldi antenna
+W-band
+wafer-scale
+wide phase range
+Wideband
+wideband differential phase shifters
+wideband input matching
+wideband low-noise amplifier (LNA)
+Wideband matching
+wideband receiver
+wireless
+wireless communication
+wireless receiver
+X-band
+X波段
+反射限幅器
+噪声系数
+晶体管限幅器
+集成限幅器低噪声放大器
+高功率处理限幅器
