@@ -98,11 +98,11 @@ class BatchPaperDetailAnalyzer:
                 domain="both",
                 question=(
                     "【第一层：问题域理解】\n"
-                    "请深入分析论文的研究背景与动机：\n"
-                    "1) 论文要解决的核心问题是什么？该问题在领域中的重要性如何？\n"
-                    "2) 现有方法存在哪些根本性缺陷或局限性？\n"
-                    "3) 论文提出的解决思路的独特性和创新性体现在哪里？\n"
-                    "4) 该研究对理论发展或实际应用的意义是什么？"
+                    "请以学术教授视角分析研究背景与动机：\n"
+                    "1) 论文要解决的核心问题与系统级重要性\n"
+                    "2) 现有方法的根本性缺陷/局限\n"
+                    "3) 本文方案的关键创新点及差异化\n"
+                    "4) 对理论或工程应用的意义"
                 ),
             ),
             
@@ -114,45 +114,28 @@ class BatchPaperDetailAnalyzer:
                 domain="both",
                 question=(
                     "【第二层：理论构建】\n"
-                    "基于前面对问题域的理解，请深入分析论文的理论框架：\n"
-                    "1) 论文建立了什么样的理论框架或数学模型？\n"
-                    "2) 核心贡献有哪些？请按理论重要性排序并说明每个贡献的独特价值\n"
-                    "3) 这些贡献如何解决第一层中识别的现有方法缺陷？\n"
-                    "4) 理论框架的适用范围和边界条件是什么？"
+                    "请系统梳理理论框架与核心贡献：\n"
+                    "1) 理论/模型/等效变换及其关键假设\n"
+                    "2) 核心贡献条目（按理论重要性排序）\n"
+                    "3) 这些贡献如何针对性解决第一层缺陷\n"
+                    "4) 适用范围与边界条件"
                 ),
             ),
             
-            # 第三层：方法设计与技术细节（通用+RF IC合并版）
+            # 第三层：方法设计（含复现与流程图）
             DeepReadQuestion(
                 id="method_design_and_technical_details",
-                description="方法设计与技术细节",
+                description="方法设计与技术细节（含复现与流程图）",
                 importance=5,
                 domain="both",
                 question=(
-                    "【第三层：技术实现】\n"
-                    "基于前面的理论框架，请深入分析具体的技术实现：\n"
-                    "1) 核心算法的设计思路和关键步骤是什么？\n"
-                    "2) 关键符号定义、损失函数/目标函数、以及主要定理/引理的推导过程\n"
-                    "3) 算法的时间复杂度、空间复杂度以及收敛性分析\n"
-                    "4) 实现中的关键技术难点和解决方案\n"
-                    "5) 与现有方法在技术层面的本质区别是什么？"
-                ),
-            ),
-            
-            # RF IC专用：电路架构分析（补充性问题，仅RF IC论文回答）
-            DeepReadQuestion(
-                id="rf_ic_circuit_architecture_detail",
-                description="RF IC电路架构与工艺设计",
-                importance=5,
-                domain="rf_ic",
-                question=(
-                    "【RF IC技术深入】\n"
-                    "请详细分析RF IC论文的电路架构与工艺设计：\n"
-                    "1) 核心电路模块的架构设计（如LNA、PA、混频器、VCO、PLL等）\n"
-                    "2) 采用的半导体工艺技术（CMOS、SiGe、GaAs、SOI等）及其选择理由\n"
-                    "3) 关键器件设计原理和性能优化策略\n"
-                    "4) 工艺参数对射频电路性能的影响分析\n"
-                    "5) 工艺-器件-电路的协同设计创新点"
+                    "【第三层：方法与实现】\n"
+                    "请从可复现角度拆解方法与实现细节，并给出1个流程图：\n"
+                    "1) 核心算法/电路/系统的关键步骤与设计抉择\n"
+                    "2) 关键符号/目标/推导要点（只保留必要环节）\n"
+                    "3) 复现要点：关键超参数/资源与时间/实现难点及对策\n"
+                    "4) 与现有方法的本质差异与权衡\n"
+                    "5) 用```mermaid 给出一张流程图（flowchart TD或LR），体现整体流程与关键分支"
                 ),
             ),
             
@@ -163,48 +146,40 @@ class BatchPaperDetailAnalyzer:
                 importance=5,
                 domain="both",
                 question=(
-                    "【第四层：实验验证】\n"
-                    "基于前面的技术设计，请分析实验如何验证方法的有效性：\n"
-                    "1) 实验设计如何验证前面提出的理论贡献？\n"
-                    "2) 数据集选择、评估指标和对比方法的合理性分析\n"
-                    "3) 主要实验结果是否支持论文的核心主张？\n"
-                    "4) 消融实验揭示了哪些关键因素和交互效应？\n"
-                    "5) 实验结果的统计显著性和可重复性如何？"
+                    "【第四层：实验与证据】\n"
+                    "请评价实验设计与结果是否充分支撑主张：\n"
+                    "1) 验证项是否针对性覆盖理论与方法关键点\n"
+                    "2) 指标选择、对比方法与消融设计的合理性\n"
+                    "3) 核心结果与主张的一致性（含统计显著性/可重复性）\n"
+                    "4) 简述1-2条主要局限/风险与其影响"
                 ),
             ),
             
-            # 第五层：假设条件与局限性分析
+            # 重要性与是否值得精读（用于生成推荐阅读等级和星级）
             DeepReadQuestion(
-                id="assumptions_limitations_and_threats",
-                description="假设条件与局限性分析",
+                id="worth_reading_judgment",
+                description="是否值得精读",
                 importance=4,
                 domain="both",
                 question=(
-                    "【第五层：批判性分析】\n"
-                    "基于前面的全面分析，请进行批判性思考：\n"
-                    "1) 论文的显式和隐式假设有哪些？这些假设的合理性如何？\n"
-                    "2) 在什么条件下方法可能失效？现实应用中的潜在风险是什么？\n"
-                    "3) 实验设计的局限性和可能的误导性结论\n"
-                    "4) 作者未充分讨论但可能影响方法有效性的因素\n"
-                    "5) 方法的可扩展性和泛化能力如何？"
+                    "【重要性评估】\n"
+                    "以教授视角给出精读建议（五选一）：强烈推荐/推荐/一般/谨慎/不推荐；并用1-2句说明理由。"
                 ),
             ),
             
-            # 第六层：复现指南与工程实现
+            # RF IC专用：电路架构与工艺设计（合并版）
             DeepReadQuestion(
-                id="reproduction_guide_and_engineering",
-                description="复现指南与工程实现",
+                id="rf_ic_circuit_architecture_detail",
+                description="RF IC电路架构与工艺设计",
                 importance=5,
-                domain="both",
+                domain="rf_ic",
                 question=(
-                    "【第六层：工程复现】\n"
-                    "基于前面的技术分析，请提供复现指导：\n"
-                    "1) 复现所需的数据集、预训练模型和依赖资源\n"
-                    "2) 关键超参数及其调优策略\n"
-                    "3) 训练和评估流程的关键步骤\n"
-                    "4) 硬件资源需求和时间成本估算\n"
-                    "5) 可能遇到的实现难点和解决方案\n"
-                    "6) 开源代码的可用性和许可证情况"
+                    "【RF IC：电路与工艺】\n"
+                    "请聚焦电路架构与工艺器件的协同：\n"
+                    "1) 核心电路模块架构（LNA/PA/混频/VCO/PLL等）\n"
+                    "2) 工艺技术选择与器件优化策略\n"
+                    "3) 工艺参数对射频性能的关键影响\n"
+                    "4) 工艺-器件-电路的协同创新点"
                 ),
             ),
             
@@ -215,87 +190,29 @@ class BatchPaperDetailAnalyzer:
                 importance=5,
                 domain="rf_ic",
                 question=(
-                    "【RF IC性能与方法】\n"
-                    "请分析RF IC论文的性能指标与设计方法学：\n"
-                    "1) 核心性能指标（频率、带宽、增益、NF、线性度、效率等）\n"
-                    "2) 设计约束条件（功耗预算、面积限制、成本控制）与PPA权衡策略\n"
-                    "3) 采用的设计流程、方法学创新和关键设计决策\n"
-                    "4) RF EDA工具链的选择与使用策略\n"
-                    "5) 版图设计、布局布线和射频优化技术\n"
-                    "6) 关键路径分析和性能瓶颈识别"
+                    "【RF IC：性能与方法】\n"
+                    "请从性能-功耗-面积(PPA)出发审视设计方法：\n"
+                    "1) 关键指标（频率/带宽/增益/NF/线性度/效率等）与约束\n"
+                    "2) 设计流程/方法学创新/EDA工具链策略\n"
+                    "3) 版图/布线/射频优化与关键路径/瓶颈"
                 ),
             ),
             
-            # RF IC专用：制造、测试与市场
+            # RF IC专用：制造、测试与市场（合并版）
             DeepReadQuestion(
                 id="rf_ic_manufacturing_market_analysis",
                 description="RF IC制造、测试与市场分析",
                 importance=4,
                 domain="rf_ic",
                 question=(
-                    "【RF IC制造与市场】\n"
-                    "请分析RF IC论文的制造、测试与应用前景：\n"
-                    "1) 制造工艺的可行性、良率分析和成本预估\n"
-                    "2) 射频测试策略、测试覆盖率设计和可靠性评估\n"
-                    "3) 封装技术、系统级集成方案和寿命分析\n"
-                    "4) 目标应用领域、市场定位和差异化优势\n"
-                    "5) 技术成熟度、产业化时间表和商业价值评估"
+                    "【RF IC：制造与市场】\n"
+                    "1) 制造工艺可行性/良率/成本与封装/可靠性\n"
+                    "2) 射频测试策略/覆盖率与量产一致性\n"
+                    "3) 应用场景/市场定位/商业化前景"
                 ),
             ),
             
-            # 第八层：影响评估与未来展望
-            DeepReadQuestion(
-                id="impact_assessment_and_future_directions",
-                description="影响评估与未来展望",
-                importance=3,
-                domain="both",
-                question=(
-                    "【第八层：影响与展望】\n"
-                    "基于前面的全面分析，请评估研究的影响和前景：\n"
-                    "1) 该研究对学术领域的短期和长期影响\n"
-                    "2) 潜在的产业应用价值和商业化前景\n"
-                    "3) 可能引发的后续研究方向\n"
-                    "4) 存在的伦理问题或社会影响\n"
-                    "5) 改进和扩展的具体建议"
-                ),
-            ),
-
-            # 重要性与是否值得精读（用于生成推荐阅读等级和星级）
-            DeepReadQuestion(
-                id="worth_reading_judgment",
-                description="是否值得精读",
-                importance=4,
-                domain="both",
-                question=(
-                    "【重要性评估】\n"
-                    "请综合判断本文是否值得精读，并给出明确等级：\n"
-                    "- 仅在以下五个等级中选择其一：强烈推荐、推荐、一般、谨慎、不推荐；\n"
-                    "- 先给出等级原词（如：强烈推荐），再用1-2句说明理由；\n"
-                    "- 若信息不足，请保守给出\"一般\"。"
-                ),
-            ),
-            
-            # 合并的流程图与可视化问题（自适应通用+RF IC）
-            DeepReadQuestion(
-                id="architecture_flowcharts_and_visualization",
-                description="核心架构流程图与可视化",
-                importance=5,
-                domain="both",
-                question=(
-                    "【可视化展示】\n"
-                    "请绘制论文核心架构或算法流程的详细流程图：\n"
-                    "要求：\n"
-                    "1) 每个流程图使用 Mermaid 语法，代码块需以 ```mermaid 开始，以 ``` 结束\n"
-                    "2) 推荐使用 flowchart TD 或 LR，节点需概括关键步骤/子模块\n"
-                    "3) 每个流程图前以一句话标明模块/阶段名称\n"
-                    "4) 格式约束：节点名用引号包裹如[\"节点名\"]，箭头标签采用|\"标签名\"|形式\n"
-                    "5) 重点展示：整体架构、核心流程、数据流向、关键决策点\n"
-                    "6) 若论文包含多个相对独立的模块，请分别给出多个流程图\n"
-                    "7) RF IC论文请特别突出：电路模块、信号流、关键控制逻辑"
-                ),
-            ),
-            
-            # 合并的演示材料问题（自适应通用+RF IC）
+            # PPT摘要与演示材料（保留一个）
             DeepReadQuestion(
                 id="presentation_summary_and_materials",
                 description="演示材料与PPT摘要",
@@ -303,49 +220,12 @@ class BatchPaperDetailAnalyzer:
                 domain="both",
                 question=(
                     "【演示材料】\n"
-                    "基于前面的深入分析，请生成用于PPT的核心思路详细Markdown摘要：\n"
-                    "输出格式要求（严格遵守）：\n"
-                    "# 总述（1行）\n"
-                    "- 一句话概括论文做了什么、为何有效\n"
-                    "\n"
-                    "# 核心模块要点（与流程图对应，3-5条）\n"
-                    "- 每条≤14字，概括输入→处理→输出与关键分支\n"
-                    "- RF IC请聚焦：电路模块、信号流、性能指标\n"
-                    "\n"
-                    "# 关键方法摘要（5-8条）\n"
-                    "- 每条≤16字，聚焦创新点和核心机制\n"
-                    "\n"
-                    "# 应用与效果（2-3条，可选）\n"
-                    "- 应用场景/性能指标/主要收益\n"
-                    "\n"
-                    "注意：仅输出上述Markdown结构，不嵌入代码，不重复流程图本身"
-                ),
-            ),
-            
-            # 第十一层：执行摘要与要点总结
-            DeepReadQuestion(
-                id="executive_summary_and_key_points",
-                description="执行摘要与要点总结",
-                importance=5,
-                domain="both",
-                question=(
-                    "【第十一层：要点总结】\n"
-                    "基于前面的深入分析，请给出精炼的执行摘要：\n"
-                    "格式要求（Markdown，不包含代码）：\n"
-                    "## 核心价值\n"
-                    "- 一句话概括方法的核心价值\n"
-                    "\n"
-                    "## 技术要点\n"
-                    "- 3-5条关键技术要点（输入/处理/输出）\n"
-                    "\n"
-                    "## 复现要点\n"
-                    "- 3-5条复现关键信息（数据/参数/资源/时间）\n"
-                    "\n"
-                    "## 适用场景\n"
-                    "- 2-3条典型应用场景\n"
-                    "\n"
-                    "## 注意事项\n"
-                    "- 2-3条重要限制或注意事项"
+                    "请输出用于PPT的Markdown摘要：\n"
+                    "# 总述（1行）\n- 一句话概括论文做了什么、为何有效\n\n"
+                    "# 核心模块要点（3-5条）\n- 每条≤14字，概括输入→处理→输出与关键分支（RF IC强调电路/信号流/性能）\n\n"
+                    "# 关键方法摘要（5-8条）\n- 每条≤16字，聚焦创新点与核心机制\n\n"
+                    "# 应用与效果（2-3条，可选）\n- 场景/指标/收益\n\n"
+                    "注意：仅输出上述Markdown结构，不嵌入代码。"
                 ),
             ),
         ]
@@ -452,12 +332,8 @@ class BatchPaperDetailAnalyzer:
             "problem_domain_and_motivation": 5,
             "theoretical_framework_and_contributions": 5,
             "method_design_and_technical_details": 5,
-            "experimental_validation_and_effectiveness": 4,
-            "assumptions_limitations_and_threats": 3,
-            "reproduction_guide_and_engineering": 4,
-            "architecture_flowcharts_and_visualization": 3,
-            "impact_assessment_and_future_directions": 2,
-            "executive_summary_and_key_points": 5,
+            "experimental_validation_and_effectiveness": 5,
+            "worth_reading_judgment": 4,
             "rf_ic_circuit_architecture_detail": 5,
             "rf_ic_performance_and_methods": 5,
             "rf_ic_manufacturing_market_analysis": 4,
@@ -490,7 +366,7 @@ class BatchPaperDetailAnalyzer:
                 for desc, result in key_findings:
                     if any(keyword in desc for keyword in ["理论", "方法", "技术", "算法"]):
                         context_parts.append(f"\n{desc}：{result[:400]}...")
-            elif current_q.id in ["assumptions_limitations_and_threats"]:
+            elif current_q.id in ["worth_reading_judgment"]:
                 # 批判分析问题，引用所有前面的分析
                 for desc, result in key_findings:
                     context_parts.append(f"\n{desc}：{result[:300]}...")
@@ -508,15 +384,11 @@ class BatchPaperDetailAnalyzer:
             "theoretical_framework_and_contributions": ["problem_domain_and_motivation"],
             "method_design_and_technical_details": ["problem_domain_and_motivation", "theoretical_framework_and_contributions"],
             "experimental_validation_and_effectiveness": ["theoretical_framework_and_contributions", "method_design_and_technical_details"],
-            "assumptions_limitations_and_threats": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
-            "reproduction_guide_and_engineering": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
-            "architecture_flowcharts_and_visualization": ["method_design_and_technical_details"],
-            "impact_assessment_and_future_directions": ["assumptions_limitations_and_threats"],
-            "executive_summary_and_key_points": ["theoretical_framework_and_contributions", "method_design_and_technical_details", "experimental_validation_and_effectiveness"],
-            "rf_ic_circuit_architecture_detail": ["problem_domain_and_motivation", "method_design_and_technical_details"],
+            "worth_reading_judgment": ["experimental_validation_and_effectiveness"],
+            "rf_ic_circuit_architecture_detail": ["method_design_and_technical_details"],
             "rf_ic_performance_and_methods": ["method_design_and_technical_details", "rf_ic_circuit_architecture_detail"],
             "rf_ic_manufacturing_market_analysis": ["rf_ic_performance_and_methods"],
-            "presentation_summary_and_materials": ["method_design_and_technical_details"],
+            "presentation_summary_and_materials": ["method_design_and_technical_details", "experimental_validation_and_effectiveness"],
         }
         
         return prev_id in dependencies.get(current_id, [])
@@ -894,21 +766,18 @@ class BatchPaperDetailAnalyzer:
             "theoretical_framework_and_contributions", 
             "method_design_and_technical_details",
             "experimental_validation_and_effectiveness",
-            "assumptions_limitations_and_threats",
-            "reproduction_guide_and_engineering",
-            "impact_assessment_and_future_directions",
-            "architecture_flowcharts_and_visualization",
+            "worth_reading_judgment",
+            # RF IC特有
+            "rf_ic_circuit_architecture_detail",
+            "rf_ic_performance_and_methods",
+            "rf_ic_manufacturing_market_analysis",
+            # 演示材料
             "presentation_summary_and_materials",
-            "executive_summary_and_key_points"
         ]
         
-        # 如果是RF IC论文，添加RF IC专用问题
+        # 如果是RF IC论文，添加RF IC专用问题（已在layer_order中）
         if self.paper_domain == "rf_ic":
-            rf_ic_layer_order = [
-                "rf_ic_circuit_architecture_detail",
-                "rf_ic_performance_and_methods",
-                "rf_ic_manufacturing_market_analysis",
-            ]
+            rf_ic_layer_order = []
             layer_order.extend(rf_ic_layer_order)
         
         for layer_id in layer_order:
@@ -982,16 +851,13 @@ class BatchPaperDetailAnalyzer:
         parts.append(f"{domain_title}\n\n{report}")
         
         # 优先追加执行级摘要、流程图与PPT材料
-        if "executive_summary_and_key_points" in self.results:
-            parts.append(f"\n\n## 执行级摘要\n\n{self.results['executive_summary_and_key_points']}")
-        if "architecture_flowcharts_and_visualization" in self.results:
-            parts.append(f"\n\n## 核心架构流程图\n\n{self.results['architecture_flowcharts_and_visualization']}")
+        #（已移除独立执行摘要与独立流程图追加）
         if "presentation_summary_and_materials" in self.results:
             parts.append(f"\n\n## 演示材料\n\n{self.results['presentation_summary_and_materials']}")
-        
+         
         # 追加其余维度
         for q in self.questions:
-            if q.id in self.results and q.id not in {"executive_summary_and_key_points", "architecture_flowcharts_and_visualization", "presentation_summary_and_materials"}:
+            if q.id in self.results and q.id not in {"presentation_summary_and_materials"}:
                 parts.append(f"\n\n## {q.description}\n\n{self.results[q.id]}")
 
         # 追加 Token 估算结果
