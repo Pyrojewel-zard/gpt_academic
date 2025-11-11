@@ -676,15 +676,6 @@ class BatchPaperDetailAnalyzer:
                     "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
                     f"{self.paper_content}"
                 )
-                # 基于最大上下文限制对全文进行截断，避免超长上下文导致 API 异常
-                try:
-                    max_ctx_tokens = getattr(self, "_max_context_tokens", 15000)
-                    # 粗略估算：1 token ≈ 4 字符
-                    max_chars = max(0, (max_ctx_tokens - 1000) * 4)
-                    if max_chars and len(remembered) > max_chars:
-                        remembered = remembered[:max_chars] + "\n\n[已截断：为保证稳定性，已对全文做长度限制]"
-                except Exception:
-                    pass
                 self.context_history = [remembered, "已接收并记住论文内容"]
             except Exception:
                 self.context_history = []
@@ -696,25 +687,10 @@ class BatchPaperDetailAnalyzer:
 
     def _ask(self, q: DeepReadQuestion) -> Generator:
         try:
-            # 构建递进式分析的上下文
-            context_parts = [
-                "请基于已记住的论文全文进行递进式精读分析，并严格围绕问题作答。\n"
-                "注意：请避免提供任何代码、伪代码、命令行或具体实现细节；"
-                "若输出流程图，须使用 ```mermaid 代码块，其余回答保持自然语言。\n"
-            ]
-            
-            # 智能构建递进式上下文
-            context_parts.extend(self._build_progressive_context(q))
-            
-            context_parts.append(f"\n\n【当前分析任务】\n{q.question}")
-            
-            prompt = "".join(context_parts)
-            
-            # 检查token限制
-            self._check_token_limits(prompt)
-            
-            # 获取领域特定的系统提示
-            sys_prompt = self._get_domain_specific_system_prompt()
+            # 与速读版一致：仅带已记住全文和简短提问
+            prompt = f"请基于已记住的论文全文回答：{q.question}"
+            # 使用通用分析助手的系统提示（与速读版一致）
+            sys_prompt = "你是一个专业的科研论文分析助手，需要仔细阅读论文内容并回答问题。请保持客观、准确，并基于论文内容提供深入分析。"
             
             resp = yield from request_gpt_model_in_new_thread_with_ui_alive(
                 inputs=prompt,

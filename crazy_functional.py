@@ -444,6 +444,23 @@ def get_crazy_functions():
         logger.error(trimmed_format_exc())
         logger.error("Load function plugin failed")
 
+    try:
+        from crazy_functions.paper_detail_reading import 单篇论文精读
+        function_plugins.update(
+            {
+                "单篇论文精读（轻量）": {
+                    "Group": "学术",
+                    "Color": "stop",
+                    "AsButton": False,
+                    "Info": "沿用精读问题库，逐问逐答，避免超长上下文 | 输入参数为论文路径或DOI/arXiv ID",
+                    "Function": HotReload(单篇论文精读),
+                },
+            }
+        )
+    except:
+        logger.error(trimmed_format_exc())
+        logger.error("Load function plugin failed")
+
 
     try:
         from crazy_functions.SourceCode_Analyse import 解析任意code项目
