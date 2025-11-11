@@ -2,13 +2,24 @@
 110–170 GHz
 140 GHz
 140-GHz
+2-D electron gas (2-DEG)
+2-D offset boosting
+2.5D ICs
+2.5D/3D
 22-nm CMOS FD-SOI
 22-nm fully depleted silicon on insulator (FDSOI)
 22.6–73.9 GHz
 22nm FDSOI
 26.5-29.5GHz
 28-nm bulk CMOS
+3-D integrated circuits
+3-D NAND flash
+3-D NAND flash memory
+3-D object detection
+3-D packaging
 39 GHz
+3D design
+3D Design & Optimization
 45-nm
 45-nm CMOS silicon-on-insulator (SOI)
 45-nm CMOS SOI
@@ -19,85 +30,206 @@
 5G NR
 5G NR FDD
 5G NR FR2
+5G新无线电(NR)
 60-GHz carrier frequency
 6G
 6G applications
 6G receiver
 79-GHz radar
+Acceleration
+Accelerator
+Accelerator design
+Accelerator-rich platform
+Accuracy
 Active antenna
 active array
 active electronically scanned array (AESA)
 Active feedforward
+Active matrix technology
 Active phased arrays
+Adaptive clock
+Adiabatic Quantum-Flux Parametron (AQFP)
+Advanced encryption standard (AES)
+Age of information (AoI)
+AI accelerators
 Air-filled coaxial structure
 AlGaAs–InGaAs pHEMT 工艺
+AlGaN/GaN
+Algorithm optimization
+Algorithm-based fault tolerance (ABFT)
+Algorithm-based verification
 Alias rejection
 alias spreading
+All-digital phase-locked loop (ADPLL)
+Allocation module
 alternative test
+Alveo
 AMI
 Amplifier
+amplitude control
 amplitude modulation
 Amplitude-modulated continuous-wave
 amplitude-modulated interferometry
+Analog & Mixed Signal
 Analog baseband
+Analog circuit topology synthesis
+Analog circuits
 Analog correlator
+analog keys
+Analog layout
+Analog layout design
 Analog photonic link
 Analog predistortion
+Analog sizing
+analog transistors
 Analog-to-digital converter (ADC)
+Analog/RF test
+Analysis time
+Analytical modeling
+Analytical tools
+and temperature (PVT) variations
 angle-of-arrival (AoA)
 Angular resolution
+anomaly Detection
 Antenna
 antenna characterization
 antenna-in-packaging (AiP) phased array
+apparent activation energy
+Approximate computing
+approximate divider
+approximate logic synthesis (ALS)
+Approximated quantum gates
+Approximation
+Architectural Design & Optimization
+Architecture
+Architecture design
+Area overhead
+Artificial intelligence (AI)
+artificial intelligence chips
+artificial neural network (ANN)
+artificial neural networks
+ASIC
+ASIC design
+Associative search
 Asymmetric switch network
+asynchronous parallel
+Asynchronous VLSI
+Attack distance
+attention
+attention mechanism
+attention network
+Auto adjustable convolutional kernels
+autoencoders
+Automated design
+automatic optimization
+Automatic test equipment (ATE)
+Automatic test generation
+Automatic test pattern generator (ATPG)
+automation
+Automation for Emerging Technologies
+Automotive System-on-Chip (SoC)
+Autonomous driving
 Autonomous vehicle (A V)
 back gate
 back gate control
+Background calibration
 Balanced amplifier
 band-shifting
 bandpass filter
 bandstop filter
 Bandwidth extension
+Bayesian optimization (BO)
 Beamformer
 Beamformer integrated circuit (BFIC)
 beamforming
 beamsteering
+behavioral model
+Berkeley analog generator
 Bi-directional
 BiCMOS
 bidirectional amplifier
+Bilaterally symmetrical (BS) hybrid topology
+binary decision diagram (BDD)
+binary neural networks (BNNs)
+Binary-Weighted DACs
+Biochip
 Biomedical sensor
+bistratal wirelength model
+Bitstream generator
+Blockchain
 blocker rejection
 blocker suppression
 Blocker-tolerant
 Bluetooth-low energy (BLE)
 body temperature
+Boolean algebra
+Boolean decomposition
+Boolean satisfiability (SAT)
+Boolean satisfiability (SAT) attacks
+Brain-inspired computing
+Branch prediction unit (BPU)
+Branch-and-bound (BB)
 breakdown voltage (BV)
+Bridge buses
 bridged-T coil
+Bridging faults
 Broadband
 Broadband circuits
 Broadband pulse generation
 broadband transceiver
+brute force attack
+buck–boost
+buffer and splitter insertion
+buffer insertion
+built-in redundancy analysis (BIRA)
+built-in self-repair (BISR)
 built-in self-test
+built-off self-test (BOST)
+Burst operation control (BOC)
 C-band
 C-band phase shifters
+C-element (CE)
+Cache design
+Cache management
+Cache mode
+CAD
 calibrated notch
 calibration
 Capacitive feedback
 Capacitive loading
 Capacitive loading simultaneous noise and input matching (CLSNIM)
 Capacitive source degeneration (CSD)
+Capacitor Arrays
 Capacitor assistance
+Capacitor sizing
 cascode
 cascode amplifier
 cascoded inverter
+Cell library free
+cell-aware (CA) models
 cellular
 cellular transceiver
 ceramic packaging
+CGRA mapper
 channel-selection LNA
 Charge pump
+Chip design
 chipless RFID readers
+chiplet IC
+chiplets
+Circuit design
+circuit encoding
+circuit matching
+Circuit Sequence Correctness (CSC)
+Circuit simulation
+Circuit synthesis
 Class-B biased bulk-injection (BI) mixer
+class-G linear amplifier (LA)
+Classification
+classifier depth
 clock generation
+Clock power
+clustering
 CMOS
 CMOS Active Inductor
 CMOS duplexer
@@ -106,167 +238,615 @@ CMOS LNA
 CMOS silicon on isolator (SOI)
 CMOS switch
 CMOS technology
+CNN
+CNN accelerator
+CNN compiler optimization
+CNN dataflow
+Co-simulation
+Coarse-grained reconfigurable arrays (CGRAs)
+Code generation
 code-division multiple access
 code-modulated embedded test
+Codec avatars
+Codesign
+Coding
 coherent
 coherent detection
+Colored Petri net (CPN)
+Combinatorial coding
 CoMET
+common centroid (CC)
+common-centroid layout
+common-centroid placement
 common-gate
 Common-gate (CG)
 Common-source (CS)
 Communication
+Compact circuit design
+Complementary approximate reachability (CAR)
+complementary field-effect transistor (CFET)
 complementary metal–oxide–semiconductor (CMOS)
 complementary metal–oxide–semiconductor (CMOS) transceiver (TRX)
 complex poles
+Computer architecture
+Computer arithmetic
+Computer-Aided Design
+Computer-aided design (CAD)
+Computing-in-memory (CIM)
+Concealable
 concurrent dual-band
+concurrent systems
+Conductance drift
+conduction loss
+Congestion prediction
+connection scalability
+connectivity-agnostic
+Constrained multiobjective Bayesian optimization (MOBO)
+constraint
+constraint-aware optimization
+consumer electronics
 contactless sensing
+Content addressable memory
+content-addressable memory (CAM)
+contention
+Continuous Time (CT) ADC
 Continuous-mode Class-F−1
+Continuously scalable conversion ratio
+contrastive learning
+control logic
+Control system
+Controlled rotation
+convolution
+convolutional neural network
+Convolutional neural network (CNN) training
+Convolutional neural networks (CNNs)
+convolutional NN (CNN)
+Cooling
+Corrections
+coupling coefficient
+coupling minimized switched inductor (CMSI)
+CPU–GPU 异构边缘设备
+Crash consistency
+Cross-interlocking
+Crosstalk
 cryogenic CMOS
 cryogenic CMOS LNA
 cryogenic temperatures
+cryptography
+Cryptography computation
+CT pipelined (CTP) ADC
+Current reference
 current reuse (CR)
 current-reuse
 current-sharing low-noise amplifier (LNA)
+Customed circuit design
+Cyber-Physical Systems/Internet of Things
+cybersecurity
 D-band
 D-band LNA
 D-band radar
+data allocation
+Data augmentation
+Data balancing
+Data flow graph (DFG)
+data freshness
+data migration policy
+Data migration strategy (DMS)
+data placement
+data retention
+data reuse
+Data-dependent nonideality
+data-driven
+dataflow
+dataflow architecture
+Dataflow optimization
+datapath design
+Dataset generation
 dc Kerr effect
 DC offset
+DC–DC conversion
+dc–dc converter
+decomposed vector rotation (DVR) model
+Deep Kernel Learning
+Deep learning
+Deep learning (DL)
+Deep learning accelerator
+deep learning-based side-channel analysis (DLSCA)
+deep neural network (DNN) accelerator
+deep neural networks (DNNs)
+Deep symbolic regression (DSR)
+defect detection
+Defect location diagnosis
+delay estimation
+density model
+depth-optimal scheduling
+design automation
+design for manufacturability
+Design for manufacture
+design for quality
+design for reliability
+design methodology
+Design space exploration
+design verification
+Deterministic optimization
+device testing
+die-to-die interconnect
+differential amplifier (DiffAmp)
+Differential evolution algorithm
+Diffractive deep neural network (D2NN)
+diffusion break
+Diffusion wave search (DWS)
+digital automated test equipment (ATE)
 digital frequency demodulation
+digital microfluidic biochips
+digital to analog converters
+digital-to-time converter (DTC)
+Digitally Assisted Analog Design
+Dimensionality reduction
+Diode
 direct-conversion receiver
+Directed acyclic graph (DAG) task
 discrete-time finite impulse response (FIR)
 distortion analysis
 distributed amplifier
 distributed driver
+distributed processing
+Divide-and-conquer (DAC)
 divider
+DNN compiler
+documentation
+Domino-like-buffered (DLB)
 downconverter
+DRAM
+Drift-diffusion model
 driver
+dual heuristic greedy algorithm (DHGA)
 dual-band
 dual-beam
 Dual-mode
 dual-polarized
+dummy count
+Dynamic backlight scaling (DBS)
+Dynamic neural networks
+Dynamic obfuscation
+dynamic programming
+dynamic resource allocation
+Dynamic scenarios
+dynamic thermal management (DTM)
+dynamic timing slack (DTS)
+Dynamic voltage and frequency scaling (DVFS)
 E- and W-bands
 E-band
+e-graph
+Early termination (ET)
+early-exiting
+EDA
+edge acceleration
+edge computing
 edge healthcare
+Edge-featured data flow graph (DFG)
+Editorial Board
+editors
 effective isotropic radiated power (EIRP)
+Efficient AI
+Electric vehicle supply equipment (EVSE)
+electrical performance
 electro magnetic
+Electrodermal activity (EDA)
 electromagnetic interference (EMI)
+electromagnetic inverse problem
+Electromagnetics (EMs) inverse modeling
+Electronic Circuits
+electronic design
+electronic design automation
+electronic design automation and methodology
+electronics
+Element-wise operations
+Elmore delay
+embedded device
+embedded machine learning
+Embedded operating systems
+Embedded Security
+Embedded system
+embedded systems-on-chip
+Embedded virtualized systems
+Emerging Technologies
+emerging technologies and applications
+Emulation
+end-to-end compiler
+energy efficient
+energy harvesting
+energy harvesting (EH)
+energy optimization
+energy-aware scheme
+ensemble learning
+entropy coding
+envelope tracking (ET)
 Equalizer
+Equivalent thermal conductance network (ETCN) model
+erasure coding
+error resilience
 error vector magnitude (EVM)
+evenness
+evolutionary algorithm (EA)
+Executor
+expected Pareto front improvement (EPFI)
+Explainable graph neural networks (GNNs)
+fabrication-process variations (FPVs)
+fairness
+Farthest point sampling (FPS)
+fault clustering
+Fault injection attack
+fault tolerance
+faulty cell group
 FD-silicon-on-insulator (SOI) CMOS
 FDSOI CMOS
+Feasibility seeking
+feature extraction
+feature fusion
+Federated learning
+federated learning (FL)
 feedback
 feedforward blocker cancellation
 feedforward cancellation
 FEM-less
+ferroelectric FET
+ferroelectric FET (FeFET)
+ferroelectric field effect transistor (FeFET)
+fetch target queue (FTQ)
+Feynman–Kac functional
+Fibonacci nonlinear feedback shift register
+field programmable gate array (FPGA) acceleration
+Field programmable gate arrays
+Field-programmable gate array (FPGA)
 fifth generation (5G)
 filter
+fine-tuning
 FinFET
+finite element simulation
+finite field arithmetic
 Flat Gain
+flcker noise
+flexible computational complexity
 Flip-chip
+flip-flop (FF)
+Flip-flops
+flipped voltage follower (FVF)
+flitter noise
+Floating Point Models
+floating-point arithmetic
+floating-point hardware
+Floorplanning
+flow encoding
+flying capacitor
 FMCW
 FMCW sensing
+forced-convection cooling
+formal verification
 forward body bias (FBB)
 four receivers (4RXs)
 four transmitters (4TXs)
 four-phase power divider
+FPGA
+FPGA acceleration
+FPGA netlist
+FPGAs and reconfigurable systems
+fractional spur
 fractional-N phase-locked loop
+freeze-thaw technique
+Frequency compensation
 frequency demodulation
 frequency division duplex (FDD)
+frequency doubler
 frequency range 3 (FR3)
 frequency-modulated continuous wave (FMCW)
 frequency-offset self-injection-locked radar
 frequency-offset technique
 Frequency-selective gain equalization technique
+frequency/phase modulation
 front end
 Front end (FE)
 front-end module (FEM)
 full-duplex
 full-metal antenna
+fully analog tile (FANT)
 fully depleted silicon-on-insulator (FDSOI) CMOS
 fully differential RF/millimeter-wave (mm-wave) switch
+fully programmable valve array (FPVA)
+Functional test sequence
 gain-boosting
 gain-to-noise temperature (G/T)
+gallium nitride (GaN)
+Galois NLFSR
 galvanoformung and abformung (UV-LIGA) technology
+Gate level
+gate-all-around
+Gate-level netlist
+gate-structure
 Gate–drain capacitance feedback
+Gaussian process regression (GPR)
+generative adversarial network (GAN)
+generative pretrained transformers (GPTs)
 gesture recognition
 GF 22FDX
+Gigahertz Data Conversion
 glass
 gm-boost
 gm-boosting
 gm3 cancellation
 Gmax
 gold band
+golden free
+golden reference free
+GPU
+GPU acceleration
+gradient effects
+gradient-based optimization
+Graph attention network (GAT)
+graph convolution networks (GCN)
+graph neural networks
+Graph neural networks (NNs)
+graph optimization
+graph representation learning (GRL)
+graph transfer learning
+graph transfer learning across electromagnetic topologies
+green learning
+ground bounce
+H.265/HEVC
+Hammerstein
+hardware acceleration
+hardware architecture for machine learning
+hardware code generation
+hardware fuzzing
+Hardware implementation
+hardware optimization
+hardware security
+hardware Trojan (HT)
+hardware Trojan (HT) detection
+Hardware Trojan (HT) localization
+hardware Trojans
+hardware verification
+Hardware-aware acceleration
+hardware-friendly
+hardware-software co-design
+harmonic rejection (HR)
+heat conduction
+heterogeneity
+heterogeneous
+Heterogeneous graph neural networks
+heterogeneous integration (HI)
+heterogeneous memory systems
+heterogeneous message passing
+heterogeneous resources
+Heterogeneous training
 heterojunction bipolar transistor (HBT)
+heuristic adaptability
+heuristic optimization
 high efficiency
 high power
+high quality sampling (HQS)
+high-dimensional optimization
+high-electron mobility transistors (HEMTs)
 high-gain
 high-isolation RF switch
 high-k
+high-level synthesis
+high-level synthesis (HLS)
+high-linearity
 high-Q inductor
 high-Q ON-chip inductor
 high-Q RF filter
+High-Speed ADC
+high-speed drivers
+Hindmarsh–Rose (HR) neuron model
+HLS
+homomorphic encryption (HE)
+Hopfield neural network (HNN)
+hotspot detection
+HT information graph (HTIG)
+HT location
+HT multifunctional classification
+Hybrid converter
+hybrid finite element method (FEM)
 hybrid integration
+hybrid memory system
+hybrid supply modulator (SM)
+hyperchaos
+Hyperdimensional (HD) computing
+hyperdimensional computing (HDC)
+hyperdiode
+hysteresis
 I/Q mismatch calibration
 I/Q receiver
+IEEE
 IEEE 802.15.4
+IEEE 80211be
+IEEE TCAD
+IEEE Transactions
 IIP2 calibration-free
+image compression
+Image recognition
 image rejection
+image sensor
+image-to-image translation
+impact-ionization-avalanche-transit-time (IMPATT) transistor
 impulse radio
 impulse radio ultrawideband (IR-UWB)
+impulse response
+In-memory computing
+In-memory computing (IMC)
+in-sensor analytics
 indium phosphide (InP)
 inductance-mutation
 Inductive loading SNIM (ILSNIM)
+inductor-current reduction
+information graphs (IGs)
+initial-boosted behavior
 injection-locking-based local oscillator (LO) generator
+Inkjet printing
 Input matching
 input third-order intercept point (IIP3)
 input-referred second-order intercept point (IIP2)
+Input/output (I/O) assignment
+instruction fetch unit
+instruction prefetcher
+insulated gate bipolar transistor (IGBT)
+integer linear programming
 integrated circuits (ICs)
+Integrated Circuits and Systems
+integrated design
+integrated phase noise (IPN)
 integrated sensing and communications
 integration
+inter-virtual machine (VM) communication
+interactive layout editing
+interchiplet
 interference
 interference rejection
 interference suppression
 interferer rejection (IR)
 interferometry
+intermediate representation
 intermodulation
+Internet of Things (IoT)
+Interpretability
+intrusion detection
+Inverse Design
+inverter
 inverter-based
 inverter-based low-noise amplifier (LNA)
+ion shuttling
+IoT
+IP security
+IP theft
+IR drop
+IR drop prediction
+IR-drop
+IR-drop estimation
 isolation improvement
+joint side-channel analysis (SCA)
+junction barrier Schottky (JBS)
+k-nearest neighbors (kNNs)
 K/Ka-band
 Ka-band
+kernel depth
+key–value transformation
+Kronecker products
 Ku-band
 Ku-band satellite communications
+language processing
 large array
+large language model
+large language models (LLMs)
+Latch design
+layer assignment
+layout
+layout decomposition
+layout parasitics
+layout-dependent effects
 leakage neutralization
+Legalisation
 lidar
+lifetime
 linear
+linear complexity
+linear filtering
 linearity
 linearity analysis
 linearization
 link budgeting
+lithium-ion (Li-ion) battery
+Lithographic Hotspot Detection
+lithography simulation
+LLC flyback converter
 LNA
 LO feedthrough (LOFT)
+Local convergence
 local oscillator (LO)
 local-oscillator (LO) phase shifting
+logic built-in self-test (BIST)
+logic detection
+Logic equivalence checking (LEC)
+logic gates
+logic locking
+logic optimization
+logic synthesis
+logic synthesis method
+logic-aggregation-based query
+logic-optimized multiplier
+logical design
+long short-term memory (LSTM)
+look-up-table (LUT)
+Lookup Tables
+loop perforation
+loop unrolling
+loop-semantic
 lossless RF feedback
 Low and flat noise figure (NF)
+low cost
 low impedance
 low intermediate frequency (IF)
+low noise
 low noise figure
+low resource
+low-dropout (LDO) regulator
+low-latency AI inference
 low-noise amplifier
 low-noise amplifier (LNA)
 low-power
+Low-power AI accelerator
+low-power design
 Low-power LNA
 low-power radar transceiver
 low-power receiver
+Machine learning
+machine learning (ML)
+Machine Learning/AI Automation
 Mach–Zehnder modulator (MZM)
+macro placement
+macromodeling
+macros
+magnetic flux
+magnetic tunnel junction (MTJ)
 Magnetically coupled resonator (MCR)
 magnetic–electric hybrid coupling
+manufacturing
+manufacturing model
+Mapping and routing
+matching
+matching network
 matching network reuse
+matrix
 maximum achievable gain (Gmax)
+maximum independent set (MIS)
+maximum operating frequency
+maximum-length sequences
+mean shift
+memory
+memory compression
+memory footprint
+memory mode
+memory periphery
+memory repair
+memory security
+memory testing
+memristive accelerator
+memristive chaotic systems
+memristive crossbar
+memristive system
+memristor
+MEMS sensor
+Microarchitecture security
+Microcontrollers
+microelectrode
+microfluidic large-scale integration (mLSI)
+microfluidics
+microphysiological system (MPS)
+microring resonators (MRRs)
 microwave
+microwave device
 microwave dielectric spectroscopy
+Microwave Filter
 microwave photonics
 Millimeter wave (mm wave)
 millimeter-wave
@@ -276,53 +856,174 @@ millimeter-wave integrated circuits
 millimeter-wave radar
 millimeter-wave wideband radio receivers
 MIMO techniques
+mini-Gnet
+minimum processing elements (PEs)
+mismatch
+mixed optimization objective
+mixed-integer-linear programming (MILP)
+mixed-signal design
+mixed-size placement
 mixer-first
+mixer-first receiver (RX)
 mixer-reused technique
 mixers
 mm-wave
 mm-wave low-noise amplifier (LNA)
+mobile system
+MobileNetV4
+model checking
+model order reduction (MOR)
+model quantization
+modeling
+Modeling & Simulation
+modeling attack
+modular adder
 modulation
+Monolithic 3-D (M3D) integration
 monostatic radar
+Monte-Carlo
+MPUF
 multi-band low-noise ampliﬁer (LNA)
 multi-gated transistors (MGTRs)
 multi-objective optimization
 multi-satellite reception
+multiagent
 multiband transceiver
+multibit memory
+multibutterfly attractor
+multichiplet accelerators
+multiclock domain
+multicompartment leaky (MCLeaky) neuron
+multicontrolled quantum gates
+multicore
 multidimensional sensing
+multilevel cache
+multiorgan
+multipath bound
+multiple local approximate changes (LACs)
+multiple patterning lithography (MPL)
+multiple-node-upset
+multiplexer design
+multiplexer-based PUF
+multiplier
+multiply-accumulate
+multiscalar multiplication (MSM)
+multiscale noise-aware training
+multistability
 Multistage noise matching
+multitask
+multitask learning (MTL)
+multitenant
+mutual coupling
+N-path
 N-path filter
+nanomagnet logic (NML)
+near data processing (NDP)
 near-field probe
 negative resistance
+network on chip (NoC)
+network-on-package (NoP)
+networked intermittent systems (NISs)
+neural architecture search (NAS)
+neural network (NN)
+neural network compression
+neural network hardware
+Neural Networks
+neural radiance fields (NeRFs)
+neuromorphic
+neuromorphic computing
+neutral atom quantum computing (NAQC)
 neutralization
 new radio (NR)
+node features
 Noise figure (NF)
 noise matching
 noise reduction
 noise-canceling
 Noise-canceling (NC)
+Noise-resilient model
+Noise-Shaping ADC
 non-uniform sub-sampling (NUSS)
 noncontact monitoring
 noncontact vital sign monitoring
+Nonconvex
+nonidealities
+nonidealities effect
+nonideality-aware algorithm
+nonlinear delay model (NLDM) model differentiation
+nonlinear feedback function
+nonlinear operation
+nonlinearity
+nonlinearity (NL)
+Nonvolatile memory
+nonvolatile memory (NVM)
 notch
 notch filter
 NR-U
+number theoretic transform (NTT)
+obfuscation
+object tracking
+offline training
 on-chip antennas
+on-chip capacitor
 on-chip implementation
+on-device training
+online
+operation units (OUs)
+operational amplifier (opamp)
 optical communication
 optical heterodyning
 optical links
+optical network-on-chip (ONoC)
+optical neural networks (ONNs)
+optical probing (OP)
+Optical proximity correction
+optimization
+optimization algorithm
+optimization methods
+option selection
 optoelectronics
+organ-on-chip (OoC)
 orthogonal frequency-division multiplexing (OFDM)
+output data reduction
+output-pole-dominant (OPD)
+over-the-air (OTA) code update
+overlap
+parallel algorithms
+parallel computing
+parallel computing simulator
+parallel distribution
+parallel linear solver
+parallel mapper
+parallel sorting
+parasitic capacitance
+parasitic extraction
+parasitic resistance
+Pareto optimization
+Pareto set learning (PSL)
 partial distortion canceling
+particle swarm optimization (PSO)
+partitioning
+partitioning algorithms
+pass transistor
 patch antenna
+pathfinding algorithms
+Pattern sequence authentication
+performance optimization
 permittivity
+perpendicular magnetic anisotropy (PMA)
+persistent memory (PM)
+personalized federated learning
+personalized Internet of Things (IoT) deployment
 phase analysis
 phase calibration
 phase error correction
+phase estimation
 phase noise (PN)
 phase quantization
 phase shifter
 phase shifter (PS)
+phase transition material (PTM)
 phase-frequency detector (PFD)
 phase-invariant
 phase-locked loop (PLL)
@@ -330,32 +1031,118 @@ phased array
 phased array calibration
 phased-array antennas (PAAs)
 phased-array transceiver
+physical design
+Physical design (EDA)
+physical faults
+physical security
+physical synthesis
+physical unclonable function (PUF)
+physiological perfusion
+piezoelectric resonator (PR)
+piezoresistive accelerator
+pipeline
+Pipelined ADC
+pipelined computing
+pipelined structure
+pipelining
+pixel-level parallelism
+placement
+planning
 plasma dispersion
+plug-in
 pMOS–nMOS configuration
+point cloud
+polyhedral model
+polymorphic logic
+polyomino
 polyphase power divider
 power amplifier
 power amplifier (PA)
 power amplifier-low-noise amplifier (PA-LNA)
 Power constrained SNIM (PCSNIM)
+Power consumption
+power grid analysis
+power integrity
+power integrity (PI)
+Power modeling
+power reduction
+Power side channel
+power supply noise (PSN)
+power-supply rejection (PSR)
+Pre-routing timing prediction
+precise time protocol (PTP)
+precision scaling
+prediction
+preference fine-tuning
+prefetch
+presynthesis
 printed circuit board (PCB)
+printed circuit boards (PCBs) routing
+printed electronics (PEs)
+privacy protection
+privacy-preserving computing
+process
+process variations
+process-voltage-temperature (PVT) invariance
+processing in-memory (PIM)
+processing-in-memory
+processing-in-memory (PIM) accelerator
+processing-in-memory (PIM) architecture
+processor microarchitecture
+program behavior
 programmable delay element
 programmable gain amplifier
 programmable silicon photonic filters
+Projection algorithms
+property-related
+protection
+prototyping
+Proximal policy optimization (PPO)
+Pruning
+Publication Information
+PUF
+pulse generation
+pulse-vanishing test
 pulsed
 pulsed chirping
+push–relabel
 Quadrature amplitude modulation (QAM)
 quadrature coupler
+quadruple-node-upset (QNU)
 Quality Factor
+Quantization
+quantized neural networks
+Quantized self-attention
+quantum circuit optimization
+quantum circuit synthesis
+Quantum circuit transformation (QCT)
+quantum circuits
+quantum compilation
 quantum computing
+quantum decoherence
+quantum feature selection (QFS)
+quantum neural networks (QNNs)
+quantum simulation
 quartz
+qubit mapping
 qubit readout
+RA time
 radar
 radar countermeasures
 radar system
+radial basis function network (RBFN)
+radiation hardening by design
+radiation hardness
 radio frequency (RF)
 radio frequency (RF) filtering low-noise amplifier (LNA)
+radio frequency (RF) power amplifier (PA)
 radio-over-fiber (RoF)
 radiometry
+random walk method
+rate coding
+real-time
+real-time scheduling
+rebanking
 receiver
 receiver (RX)
 reconfigurable
@@ -363,88 +1150,291 @@ reconfigurable filter
 reconfigurable microwave component
 reconfigurable radio frequency
 reconﬁgurable coupler
+reconﬁgurable dataﬂow accelerators (RDA)
+rectilinear Steiner tree
+recurrent neural networks (RNNs)
+reduced-order model (ROM)
+reduced-pin-count test (RPCT)
+redundancy analysis (RA)
+Reference voltage compensator (RVC)
+register clustering
+register transfer level (RTL)
+reinforcement learning (RL)
+reliability
+Reliable Systems
+remaining useful life (RUL)
+remote direct memory access (RDMA)
+repair rate
+representation learning
+RepVGG
+request size
+residual network
+residual neural networks
+resilience
 resistive feedback
+resistive random access memory (ReRAM)
+resistive random access memory (ReRAM) crossbar array
 resonant feedback compensation equalization (RFCE)
+resource sensitive
+response time bound
+resubstitution
 return loss
+reverse engineering
+RF
 RF integrated circuit
 RF photonics
 RFSOI
+ring oscillator (RO)
+ripple carry adder
+RISC-V
+RISC-V microarchitecture
+rms jitter
+Robin boundary conditions
+Robot Operating System
+Routability
+routing
+RowHammer (RH) attack
+RRAM
+RTL compiler
+RTL locking
+RTL optimization
+runahead execution
+runtime scheduling
+runtime security
 RX
+sampling algorithm
+sampling analog phase-locked loop (SAPLL)
+sampling theory
+SAT attack
 Satcom-On-The-Move (SOTM)
 satellite communication
 satellite communication (SATCOM)
+satisfiability (SAT)
 SAW-less receiver
+scalable depth multiplier
 scalar
+scalar processors
+scan obfuscation
+scan-based interconnect test pattern generation
+scenario-specific-task-specific
+scheduling
+scheduling algorithms
+Schwarz–Christoffel transformation
+SDE
 second-order
+Secure
+secure scan chains
+secure scan design
+security
 segmented MZM
+selective challenge–response pair(CRP)
+selective mapping
 self-injection-locked (SIL) radar
 self-interference cancellation
+self-recovery
+self-supervised learning (SSL)
+semantic segmentation
+semiconductor device modeling
 sensor
+serverless mobile edge computing (SMEC)
+SGX-style integrity tree (SIT)
+shear stress
 shorted stubs
+shuffling
 SiGe
 SiGe BiCMOS
 SiGe BiCMOS technology
+signal integrity
+signaling
 silicon beamformer
 silicon photonics
 silicon photonics (SiP)
 silicon–germanium (SiGe)
+simulation
+simulation-based fault injection
+Simulink models
 Simultaneous noise and input matching (SNIM)
+simultaneous weighted push (SWP)
+single event upset (SEU) faults
+single instruction multiple data (SIMD)
+Single stuck-at faults
 single-channel transceivers
+single-cycle gate-exhaustive faults
+single-inductor dual-input-dual-output (SIDIDO) converter
+single-mode operation
 single-pole
 single-sideband (SSB) mixer
 single-throw (SPST)
 single-to-differential (S2D)
 SiPh integration
 sliding IF
+small sample
+Sobol sequences
+society 5.0
+soft error rate (SER)
+soft errors
+soft-charging operation
 software-defined radio
+software-hardware co-design
+solid-state drives
+solution set
+Source–drain cross-coupled inverters (SCIs)
 sp)
+Sparse accelerator
+Sparse computation
+Sparse linear algebra (SLA)
+sparse linear projection
+sparse linear solver
+sparse neural network
+Sparse-matrix–dense-matrix multiplication (SpMM)
+Sparse-matrix–sparse-vector multiplication (SpMSpV)
+sparsity
+spatial and temporal locality
+Spatial hardware
+spatial locality
+spatial similarity
 SPDT switch
 specific on-resistance (Ron
+Spectre
+speed binning
+speed monitors (SMONs)
+spiking neural network (SNN)
 spillover attenuation
+Split DACs
+splitter insertion
 spooﬁng
 spurious-free dynamic range
+SRAM
 stability
+standard cell library extension
+standard cells
+state-space reduction
+Steiner minimal tree
+Steiner trees
 stepped-frequency carrier
+stochastic computing
+stochasticity
+storage system
+structural testing
+structured pruning
+sub-CGRA
+sub-range detector
+sub-ranging
 sub-sampling
 sub-terahertz (subTHz)
 sub-THz
+subcallback
+subgraph isomorphism
 subharmonic mixer (SHM)
 subthreshold
+superconducting electronics
+superconducting qubit
 superconducting qubit readout
 superconducting single-photon detectors
+Superiorization method (SM)
+switched capacitor (SC)
+switched inductor
 switched-capacitor
+switched-capacitor (SC) converters
+symbolic computer algebra (SCA)
+symmetric function
 symmetric matching network
 synergistic equalization
+synthesis
+Synthesis and Verification
 synthetic aperture radar (SAR)
+system identification (SysID)
+system on chip
+system virtualization
+System-Level Design
+system-level optimization
+Systems
+systems design
+Systolic array
+systolic array (SA)
 T/R switching
+TC-adjustable current source
+TCAD
+technology mapping
+technology node
+technology-dependent optimization
 telemedicine
+temperature
+temperature coefficient (TC)
+temperature predictor
+temperature-dependent property
 terahertz (THz)
+ternary spikes
+Test
+test authentication
+test case generation
+test code word assignment
+test compaction
+test coverage
+test data compression
+test generation
+test point insertion (TPI)
+test signal generation
+test time
+testing
 thermal
+thermal analysis
+thermal management
+thermal noise
+thermal sensitivity
+thermal simulation
+thermoelectric coolers (TECs)
 third-order intermodulation (IM3)
 time domain (TD)
 time skew
+time-domain compute-in-memory (TD-CiM)
 time-of-flight
+Time-to-digital converter (TDC)
+timing
+Timing analysis
 timing jitter
+timing optimization
+timing prediction
+tiny devices
+TinyML
+Toggle ratio
+topology
+topology synthesis
 total radiation efficiency (TRE)
 transceiver
 transceiver (TRX)
+transcendental functions
+transfer learning
 transformer
 Transformer-based notch filter
 transformer-loaded
+transient execution attack
+transient thermal simulation
+transistor count reduction
+transistor level design
+transistor-level programming
+transition faults
 transmission line
 transmission zero
 transmit/receive (TX/RX) antenna sharing
 transmitter
 Transmitter (TX)
 transmitter (TX) leakage rejection
+trapped ions
 tri-coupled transformer
+Triple node upset (TNU)
+Triple step-down converter with one-inductor (TSDC-OL) technique
 triple-path and dual-path noise canceling (NC)
 true-time delay
 TRX switch
 tunable bandwidth
 tunable matching network
+tunable true random number generator (TTRNG)
+tutorial
 two-step design fashion
+UHDTV
 ultra-wideband
+ultra-wideband power amplifier (PA)
 ultralow voltage/power
 ultralow-noise ﬁgure (NF)
 ultralow-power wireless
@@ -452,32 +1442,87 @@ ultraviolet lithographie
 ultrawideband (UWB)
 ultrawideband transceiver
 Unconditional stability
+uniform recurrence equations (UREs)
+Unit Capacitance
+uniﬁed architecture
+uniﬁed array
+untrustworthy test engineers
+upper bound
+upwind method
 UWB
 UWB System
+vague design
+validation
 variable gain
 Variable-gain low-noise amplifier (VG-LNA)
 Variation of lateral width (VLW)
 vector compensation
+vector processors
 vehicle safety
+verification
+verification algorithm
+Verilog
+Verilog-A model
+video compression
+vision transformer (ViT)
 vital sign
 vital signs detection
+Vitis
 Vivaldi antenna
+VLSI placement
+voltage
+voltage droop
+voltage drop analysis
+voltage multiplier
+voltage regulation
+voltage-controlled oscillator (VCO)
+voltage-dependent conductance
+Voronoi tree search
+voxelization
 W-band
 wafer-scale
+wavelet transform
+Wear leveling
+wearable stress and affect detection (WESAD)
+weight mapping strategy
+Wi-Fi 7
 wide phase range
+wide stripes
 Wideband
 wideband differential phase shifters
 wideband input matching
 wideband low-noise amplifier (LNA)
 Wideband matching
 wideband receiver
+winner-take-all
+winner-take-all (WTA)
 wireless
 wireless communication
 wireless receiver
+workflow
+write noise
 X-band
+Xilinx
 X波段
+zero-knowledge proofs (ZKPs)
+zero-voltage switching (ZVS)
+Zram
+功率回退
+功率放大器(PA)
 反射限幅器
+可靠性
 噪声系数
+多赫蒂
+多路多赫蒂
+峰值到平均功率比(PAPR)
+效率增强
 晶体管限幅器
+模仿学习
+正交频分复用(OFDM)
+毫米波(mmWave)
+能效
+自适应偏置
+负载调制
+资源管理
 集成限幅器低噪声放大器
 高功率处理限幅器

@@ -676,6 +676,15 @@ class BatchPaperDetailAnalyzer:
                     "请记住以下论文全文，后续所有问题仅基于此内容回答，不要重复输出原文：\n\n"
                     f"{self.paper_content}"
                 )
+                # 基于最大上下文限制对全文进行截断，避免超长上下文导致 API 异常
+                try:
+                    max_ctx_tokens = getattr(self, "_max_context_tokens", 15000)
+                    # 粗略估算：1 token ≈ 4 字符
+                    max_chars = max(0, (max_ctx_tokens - 1000) * 4)
+                    if max_chars and len(remembered) > max_chars:
+                        remembered = remembered[:max_chars] + "\n\n[已截断：为保证稳定性，已对全文做长度限制]"
+                except Exception:
+                    pass
                 self.context_history = [remembered, "已接收并记住论文内容"]
             except Exception:
                 self.context_history = []
@@ -717,8 +726,6 @@ class BatchPaperDetailAnalyzer:
             )
             if resp:
                 self.results[q.id] = resp
-                # 将问答对累积到历史记录中，实现上下文连贯性
-                self.context_history.extend([prompt, resp])
                 
                 # 更新token统计
                 self._update_token_stats(prompt, resp)
